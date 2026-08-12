@@ -164,6 +164,23 @@ def _has_actual_consensus_evidence(evidence):
     return has_vote_data and has_validator_data
 
 
+def _deployment_input_size(source_bytes, policy_json):
+    constructor_args = json.dumps(
+        [policy_json],
+        ensure_ascii=False,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return len(source_bytes) + len(constructor_args)
+
+
+def _assert_portable_deployment_input_size(size):
+    if size >= PORTABLE_DEPLOYMENT_INPUT_LIMIT:
+        raise AssertionError(
+            f"Deployment input is {size} bytes; portable ceiling is below "
+            f"{PORTABLE_DEPLOYMENT_INPUT_LIMIT}"
+        )
+
+
 def _transaction_identifiers(value):
     result = []
     accepted = {"transaction_hash", "transaction_id", "tx_hash", "tx_id", "hash"}
@@ -312,15 +329,12 @@ def test_deploy_and_smoke_finalized():
     fixture = _fixture()
     expected = _expected()
 
-    source = CONTRACT_PATH.read_text(encoding="utf-8")
-    source_bytes = source.encode("utf-8")
+    source_bytes = CONTRACT_PATH.read_bytes()
+    source = source_bytes.decode("utf-8")
     source_sha256 = hashlib.sha256(source_bytes).hexdigest()
     policy_input_sha256 = hashlib.sha256(policy_json.encode("utf-8")).hexdigest()
-    deployment_input_bytes = len(source_bytes) + len(policy_json.encode("utf-8"))
-    if deployment_input_bytes > PORTABLE_DEPLOYMENT_INPUT_LIMIT:
-        raise AssertionError(
-            f"Source plus policy is {deployment_input_bytes} bytes; portable limit is {PORTABLE_DEPLOYMENT_INPUT_LIMIT}"
-        )
+    deployment_input_bytes = _deployment_input_size(source_bytes, policy_json)
+    _assert_portable_deployment_input_size(deployment_input_bytes)
     if not source.splitlines()[0].startswith('# { "Depends": "py-genlayer:'):
         raise AssertionError("Contract runner is not pinned")
     if "py-genlayer:test" in source or "py-genlayer:latest" in source:
@@ -381,7 +395,7 @@ def test_deploy_and_smoke_finalized():
         print(f"deployment_proof={output}")
         return
     else:
-        deployment_receipt = _deploy_contract(factory, policy_json, network)
+        deployment_receipt = _deploy_contract(factory, policy_json, actual_network)
         if not tx_execution_succeeded(deployment_receipt):
             raise AssertionError(f"Deployment execution failed: {deployment_receipt}")
         safe_deployment_receipt = _json_safe(deployment_receipt)

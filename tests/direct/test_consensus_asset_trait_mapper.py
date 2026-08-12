@@ -570,15 +570,15 @@ def test_source_format_and_content_limits_are_distinct_from_semantic_unsupported
     assert mapper.get_mapping(1)["status"] == status
 
 
-def test_pinned_compact_png_with_single_phys_chunk_is_accepted(direct_vm, direct_deploy):
-    fixture = Path("../genlayer-ic-public-fixtures/fixtures/assets/emberguard-heavy-armor-compact.png")
-    image_body = fixture.read_bytes()
-    assert len(image_body) == 58501
+def test_png_with_single_phys_chunk_is_accepted(direct_vm, direct_deploy):
+    phys = struct.pack(">IIB", 3_780, 3_780, 1)
+    image_body = make_png(ancillary_chunks=((b"pHYs", phys),))
+    assert len(phys) == 9
 
     mapper = deploy_mapper(direct_vm, direct_deploy)
     metadata_body, image_body = mock_sources(direct_vm, image_body=image_body)
     mock_mapping(direct_vm)
-    submit(mapper, metadata_body, image_body, request_id="PINNED-PHYS")
+    submit(mapper, metadata_body, image_body, request_id="SINGLE-PHYS")
 
     assert mapper.get_mapping(1)["status"] == "MAPPED"
 

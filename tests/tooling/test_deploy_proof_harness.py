@@ -1,3 +1,5 @@
+import ast
+import json
 from pathlib import Path
 import runpy
 
@@ -73,3 +75,46 @@ def test_harness_has_no_arbitrary_or_resubmission_recovery_inputs():
     assert "ASSET_MAPPER_RESUME_MAPPING_RECEIPT_JSON" not in source
     assert "ASSET_MAPPER_RESUME_SUBMIT" not in source
     assert "Interrupted proof checkpoints cannot be resumed safely" in source
+
+
+def test_fresh_deployment_uses_validated_actual_network():
+    tree = ast.parse(HARNESS_PATH.read_text(encoding="utf-8"))
+    calls = [
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "_deploy_contract"
+    ]
+
+    assert len(calls) == 1
+    assert isinstance(calls[0].args[2], ast.Name)
+    assert calls[0].args[2].id == "actual_network"
+
+
+def test_deployment_size_matches_json_serialized_constructor():
+    source_bytes = Path(
+        "contracts/ConsensusAssetAdmissionTraitMapper.py"
+    ).read_bytes()
+    policy_json = Path("examples/live-policy.json").read_text(encoding="utf-8")
+    constructor_args = json.dumps(
+        [policy_json],
+        ensure_ascii=False,
+        separators=(",", ":"),
+    ).encode("utf-8")
+
+    measured = HARNESS["_deployment_input_size"](source_bytes, policy_json)
+
+    assert measured == len(source_bytes) + len(constructor_args)
+    assert measured == 48_670
+    assert measured < HARNESS["PORTABLE_DEPLOYMENT_INPUT_LIMIT"]
+
+
+def test_portable_deployment_ceiling_is_strict():
+    check = HARNESS["_assert_portable_deployment_input_size"]
+
+    assert check(49_999) is None
+    with pytest.raises(AssertionError, match="portable ceiling is below 50000"):
+        check(50_000)
+    with pytest.raises(AssertionError, match="portable ceiling is below 50000"):
+        check(50_001)
