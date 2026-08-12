@@ -13,6 +13,7 @@ from pathlib import Path
 
 from gltest import get_contract_factory
 from gltest.assertions import tx_execution_succeeded
+from gltest.clients import get_gl_client
 from gltest.types import TransactionStatus
 from gltest.utils import extract_contract_address
 from gltest_cli.config.general import get_general_config
@@ -21,6 +22,7 @@ from gltest_cli.config.general import get_general_config
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT_PATH = ROOT / "contracts" / "ConsensusAssetAdmissionTraitMapper.py"
 PORTABLE_DEPLOYMENT_INPUT_LIMIT = 50_000
+BRADBURY_DEPLOYMENT_GAS_LIMIT = 60_000_000
 POLICY_FIELDS = {
     "admission_rules",
     "class_power_caps",
@@ -85,6 +87,37 @@ def _json_safe(value):
     if hasattr(value, "__dict__"):
         return _json_safe(vars(value))
     return str(value)
+
+
+def _deploy_contract(factory, policy_json, network):
+    """Scope Bradbury's manual gas ceiling to deployment estimation only."""
+    if network != "testnet_bradbury":
+        return factory.deploy_contract_tx(
+            args=[policy_json],
+            wait_transaction_status=TransactionStatus.FINALIZED,
+        )
+
+    client = get_gl_client()
+    original_make_request = client.provider.make_request
+
+    def scoped_make_request(method, params=None):
+        if method == "eth_estimateGas":
+            return {
+                "jsonrpc": "2.0",
+                "id": 0,
+                "result": hex(BRADBURY_DEPLOYMENT_GAS_LIMIT),
+            }
+        return original_make_request(method, params=params)
+
+    client.provider.make_request = scoped_make_request
+    print(f"ASSET_MAPPER_DEPLOYMENT_EVM_GAS_LIMIT={BRADBURY_DEPLOYMENT_GAS_LIMIT}")
+    try:
+        return factory.deploy_contract_tx(
+            args=[policy_json],
+            wait_transaction_status=TransactionStatus.FINALIZED,
+        )
+    finally:
+        client.provider.make_request = original_make_request
 
 
 def _consensus_evidence(value, path="receipt"):
@@ -348,10 +381,7 @@ def test_deploy_and_smoke_finalized():
         print(f"deployment_proof={output}")
         return
     else:
-        deployment_receipt = factory.deploy_contract_tx(
-            args=[policy_json],
-            wait_transaction_status=TransactionStatus.FINALIZED,
-        )
+        deployment_receipt = _deploy_contract(factory, policy_json, network)
         if not tx_execution_succeeded(deployment_receipt):
             raise AssertionError(f"Deployment execution failed: {deployment_receipt}")
         safe_deployment_receipt = _json_safe(deployment_receipt)
