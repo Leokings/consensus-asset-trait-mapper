@@ -86,7 +86,7 @@ npm run check:deploy
 npm run test:tooling
 ```
 
-Current suite: **84 direct tests**, **4 Python proof-harness tests**, and
+Current suite: **84 direct tests**, **7 Python proof-harness tests**, and
 **18 JavaScript Bradbury-harness tests**. Coverage includes validator-hook audit
 acceptance/rejection, malformed audits, changed evidence, terminal-result
 equivalence, transient-error parity, deployable repository fixtures,
@@ -106,6 +106,36 @@ gltest tests\integration\test_consensus_asset_trait_mapper.py -v -s `
 ```
 
 Both deployment and mapping explicitly wait for `FINALIZED`, and successful execution is asserted separately.
+
+### Recorded 2026-08-12 network evidence
+
+- StudioNet returned the exact expected `MAPPED` record at
+  `0x5b24a46Eb67b0B5d7076Ea5e542c7bfB2717b180`, as reported by the
+  test harness. No StudioNet transaction/vote artifact is included here.
+- V2.0.2 source commit `9704da33003b74755315ab1d05e5f2cf8ac90501`
+  deployed on Bradbury at `0x60F385056d8FD7d4CFcD496764Ff92EDf5Ce6Bf7`.
+  Deployment transaction
+  `0x04d685f9b00b06e0d041931497e5003f11ad5cf353bd87374a9bd1d99c1354b1`
+  finalized with five `AGREE` votes.
+- Bradbury semantic transaction
+  `0x8b9505cbff65788371fe54e79855b35d52e4dd45768d38eb8c376cc56915b0db`
+  did **not** finalize a mapping. The SDK reports `TIMEOUT` and
+  `numOfRounds = 6`; the explorer exposes seven raw round entries and labels
+  the terminal result/execution `MAJORITY_TIMEOUT` / `NONDET_DISAGREE`. In the
+  last round the SDK labels the first vote `DETERMINISTIC_VIOLATION`, while the
+  explorer labels it `NONDET_DISAGREE`; both expose four other `TIMEOUT` votes.
+- After that terminal timeout, `mapping_count` remained zero, request and asset
+  lookups were absent under both `latest-final` and `latest-nonfinal`. This
+  release harness performed no retry, and the checkpoint records none. The
+  observed leader candidate is not a contract result.
+
+The concise audited record is
+[`deployments/bradbury-2026-08-12-v2.0.2-timeout-audit.json`](deployments/bradbury-2026-08-12-v2.0.2-timeout-audit.json);
+it embeds SHA-256-committed terminal subsets retrieved through genlayer-js 1.1.8
+and the official Explorer API. The corresponding fail-closed full checkpoint
+remains beside it, but is explicitly pre-terminal `IN_PROGRESS` evidence and
+does not contain the eventual timeout rounds. This repository claims a finalized
+Bradbury deployment, not a finalized Bradbury semantic mapping.
 
 The proof harness records finalized receipts, discovered consensus/vote fields, exact expected and persisted results, policy/source hashes, and limitations:
 

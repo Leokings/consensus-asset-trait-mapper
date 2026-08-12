@@ -79,6 +79,30 @@ Before any semantic write, both request and asset lookups must fail with their
 exact ABI-decoded GenVM `UserError` envelopes. Generic RPC wrapper text and
 untyped substring matches never establish absence.
 
+### Recorded Bradbury timeout
+
+The v2.0.2 Bradbury deployment finalized with five `AGREE` votes, but its
+semantic smoke did not establish a mapping. The SDK reports `TIMEOUT` with
+`numOfRounds = 6`; the explorer exposes seven raw round entries and labels the
+terminal result/execution `MAJORITY_TIMEOUT` / `NONDET_DISAGREE`. For the last
+round, the SDK labels the first vote `DETERMINISTIC_VIOLATION` while the explorer
+labels the same position `NONDET_DISAGREE`; the remaining four votes are
+`TIMEOUT` in both representations.
+
+Post-timeout reads under both `latest-final` and `latest-nonfinal` proved
+`mapping_count == 0`, an unknown request, and an unmapped asset. This release
+harness made no retry, and the checkpoint records none. A candidate `MAPPED`
+output visible in raw execution evidence was not accepted and must never be
+consumed as contract state. See the committed timeout audit and full fail-closed
+checkpoint under `deployments/`.
+
+The full harness checkpoint stopped in pre-terminal `IN_PROGRESS` state and does
+not contain the eventual timeout receipt or round data. The separate concise
+audit embeds canonical SHA-256-committed terminal subsets from genlayer-js 1.1.8
+`getTransaction`, `waitForTransactionReceipt`, and the official Explorer API,
+with retrieval time and source URLs. Do not cite the checkpoint alone as terminal
+timeout evidence.
+
 ## Consumer checklist
 
 - Wait for `FINALIZED` and verify execution succeeded.

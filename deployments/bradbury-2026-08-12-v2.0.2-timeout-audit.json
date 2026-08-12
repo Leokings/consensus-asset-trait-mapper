@@ -11,6 +11,170 @@
     "genvm_chain_id": 1,
     "rpc": "https://rpc-bradbury.genlayer.com"
   },
+  "verification": {
+    "checked_at": "2026-08-12T17:39:42.454Z",
+    "explorer_transaction_url": "https://explorer-bradbury.genlayer.com/tx/0x8b9505cbff65788371fe54e79855b35d52e4dd45768d38eb8c376cc56915b0db",
+    "explorer_api_url": "https://explorer-bradbury.genlayer.com/api/v1/transactions/0x8b9505cbff65788371fe54e79855b35d52e4dd45768d38eb8c376cc56915b0db",
+    "release_harness_genlayer_js_version": "1.1.8"
+  },
+  "terminal_evidence": {
+    "retrieved_at": "2026-08-12T17:39:42.454Z",
+    "canonicalization": "Recursively sort object keys, preserve array order, then SHA-256 the compact UTF-8 JSON subset.",
+    "sdk_get_transaction": {
+      "canonical_subset_sha256": "189b9b0f43fb9c52d9f692b9e26e28154e256c4c20c2a498cfaa5df63af5dca3",
+      "subset": {
+        "source_method": "genlayer-js client.getTransaction",
+        "current_timestamp": "1786556372",
+        "tx_id": "0x8b9505cbff65788371fe54e79855b35d52e4dd45768d38eb8c376cc56915b0db",
+        "status_code": 12,
+        "status_name": "VALIDATORS_TIMEOUT",
+        "result_code": 3,
+        "result_name": "TIMEOUT",
+        "execution_code": 1,
+        "execution_name": "FINISHED_WITH_RETURN",
+        "num_of_rounds": 6,
+        "terminal_round_index": 5,
+        "last_round": {
+          "round_field": 0,
+          "result_code": 3,
+          "votes_committed": 5,
+          "votes_revealed": 5,
+          "validators": [
+            "0x859dF0816Ed95B22B946C56dBc004b17993d1Ed6",
+            "0x3a130401885fD9322E2E21174A5496065f716b35",
+            "0xE8fdefdfe18fD8E5B0d576b7CcfC5a29CE43fD7f",
+            "0xfd811B16001077243e07173ec72a4735FF04C3AA",
+            "0x7c23E70217AB2A9E777940Eb769bA4198d1BaA61"
+          ],
+          "vote_codes": [4, 3, 3, 3, 3],
+          "vote_names": [
+            "DETERMINISTIC_VIOLATION",
+            "TIMEOUT",
+            "TIMEOUT",
+            "TIMEOUT",
+            "TIMEOUT"
+          ],
+          "vote_hashes": [
+            "0x72453e75a15af83afd40fa3538972eed2a61b5ea01458ecda3a0e8dc7806cc2b",
+            "0x28d2cc6a1212531d0dde820668e8241af6171bb26079c87993f8b6705aa9261f",
+            "0x0def2156ae14d19afb3f7e3abc9203de54caa9b54fe852587917bff57cdee94c",
+            "0xbe113a9576c84e975dc2c2cfd57d3c07bff9980d1f659d395be86c0229bee3c6",
+            "0xa6a1c40733116ae1179136cbcc37d94c6c06758998d05d1f15b0f5eadb502de9"
+          ],
+          "result_hashes": [
+            "0xdb62c478eb090d24ed264eec0ce1abe0fa0e6b21fb4d33d3971e389b829e9abf",
+            "0x9fc8d2d92c2ea25ae2ac3d9b20370cb9cb1e53d073b5c1a20b03621ca750f8df",
+            "0x9fc8d2d92c2ea25ae2ac3d9b20370cb9cb1e53d073b5c1a20b03621ca750f8df",
+            "0x9fc8d2d92c2ea25ae2ac3d9b20370cb9cb1e53d073b5c1a20b03621ca750f8df",
+            "0x9fc8d2d92c2ea25ae2ac3d9b20370cb9cb1e53d073b5c1a20b03621ca750f8df"
+          ]
+        }
+      }
+    },
+    "sdk_transaction_receipt": {
+      "canonical_subset_sha256": "2d6de8fe04365f36106bf04a0c6a8cfbd96f7f66be696d0329f206bba9d21cd7",
+      "subset": {
+        "source_method": "genlayer-js client.waitForTransactionReceipt(ACCEPTED,retries=0)",
+        "current_timestamp": "1786556373",
+        "tx_id": "0x8b9505cbff65788371fe54e79855b35d52e4dd45768d38eb8c376cc56915b0db",
+        "status_code": 12,
+        "status_name": "VALIDATORS_TIMEOUT",
+        "result_code": 3,
+        "result_name": "TIMEOUT",
+        "execution_code": 1,
+        "execution_name": "FINISHED_WITH_RETURN",
+        "num_of_rounds": 6,
+        "terminal_round_index": 5,
+        "last_round": {
+          "round_field": 0,
+          "result_code": 3,
+          "votes_committed": 5,
+          "votes_revealed": 5,
+          "validators": [
+            "0x859dF0816Ed95B22B946C56dBc004b17993d1Ed6",
+            "0x3a130401885fD9322E2E21174A5496065f716b35",
+            "0xE8fdefdfe18fD8E5B0d576b7CcfC5a29CE43fD7f",
+            "0xfd811B16001077243e07173ec72a4735FF04C3AA",
+            "0x7c23E70217AB2A9E777940Eb769bA4198d1BaA61"
+          ],
+          "vote_codes": [4, 3, 3, 3, 3],
+          "vote_names": [
+            "DETERMINISTIC_VIOLATION",
+            "TIMEOUT",
+            "TIMEOUT",
+            "TIMEOUT",
+            "TIMEOUT"
+          ],
+          "vote_hashes": [
+            "0x72453e75a15af83afd40fa3538972eed2a61b5ea01458ecda3a0e8dc7806cc2b",
+            "0x28d2cc6a1212531d0dde820668e8241af6171bb26079c87993f8b6705aa9261f",
+            "0x0def2156ae14d19afb3f7e3abc9203de54caa9b54fe852587917bff57cdee94c",
+            "0xbe113a9576c84e975dc2c2cfd57d3c07bff9980d1f659d395be86c0229bee3c6",
+            "0xa6a1c40733116ae1179136cbcc37d94c6c06758998d05d1f15b0f5eadb502de9"
+          ],
+          "result_hashes": [
+            "0xdb62c478eb090d24ed264eec0ce1abe0fa0e6b21fb4d33d3971e389b829e9abf",
+            "0x9fc8d2d92c2ea25ae2ac3d9b20370cb9cb1e53d073b5c1a20b03621ca750f8df",
+            "0x9fc8d2d92c2ea25ae2ac3d9b20370cb9cb1e53d073b5c1a20b03621ca750f8df",
+            "0x9fc8d2d92c2ea25ae2ac3d9b20370cb9cb1e53d073b5c1a20b03621ca750f8df",
+            "0x9fc8d2d92c2ea25ae2ac3d9b20370cb9cb1e53d073b5c1a20b03621ca750f8df"
+          ]
+        }
+      }
+    },
+    "explorer_api": {
+      "canonical_subset_sha256": "32af3070e50c194132367819d9544e4cd21c7fd556a8c68e2e26a48866d6a6b7",
+      "subset": {
+        "source_method": "Explorer GET /api/v1/transactions/{hash}",
+        "hash": "0x8b9505cbff65788371fe54e79855b35d52e4dd45768d38eb8c376cc56915b0db",
+        "status": "validators_timeout",
+        "execution_result": "NONDET_DISAGREE",
+        "submission_timestamp": 1786555033,
+        "activation_timestamp": 1786555064,
+        "finalization_timestamp": 0,
+        "raw_round_entry_count": 7,
+        "terminal_round_entry_index": 6,
+        "terminal_round": {
+          "round_field": 0,
+          "result": "majority_timeout",
+          "votes_committed": 5,
+          "votes_revealed": 5,
+          "validators": [
+            {
+              "address": "0x859dF0816Ed95B22B946C56dBc004b17993d1Ed6",
+              "vote": "nondet_disagree",
+              "vote_hash": "0x72453e75a15af83afd40fa3538972eed2a61b5ea01458ecda3a0e8dc7806cc2b",
+              "result_hash": "0xdb62c478eb090d24ed264eec0ce1abe0fa0e6b21fb4d33d3971e389b829e9abf"
+            },
+            {
+              "address": "0x3a130401885fD9322E2E21174A5496065f716b35",
+              "vote": "timeout",
+              "vote_hash": "0x28d2cc6a1212531d0dde820668e8241af6171bb26079c87993f8b6705aa9261f",
+              "result_hash": "0x9fc8d2d92c2ea25ae2ac3d9b20370cb9cb1e53d073b5c1a20b03621ca750f8df"
+            },
+            {
+              "address": "0xE8fdefdfe18fD8E5B0d576b7CcfC5a29CE43fD7f",
+              "vote": "timeout",
+              "vote_hash": "0x0def2156ae14d19afb3f7e3abc9203de54caa9b54fe852587917bff57cdee94c",
+              "result_hash": "0x9fc8d2d92c2ea25ae2ac3d9b20370cb9cb1e53d073b5c1a20b03621ca750f8df"
+            },
+            {
+              "address": "0xfd811B16001077243e07173ec72a4735FF04C3AA",
+              "vote": "timeout",
+              "vote_hash": "0xbe113a9576c84e975dc2c2cfd57d3c07bff9980d1f659d395be86c0229bee3c6",
+              "result_hash": "0x9fc8d2d92c2ea25ae2ac3d9b20370cb9cb1e53d073b5c1a20b03621ca750f8df"
+            },
+            {
+              "address": "0x7c23E70217AB2A9E777940Eb769bA4198d1BaA61",
+              "vote": "timeout",
+              "vote_hash": "0xa6a1c40733116ae1179136cbcc37d94c6c06758998d05d1f15b0f5eadb502de9",
+              "result_hash": "0x9fc8d2d92c2ea25ae2ac3d9b20370cb9cb1e53d073b5c1a20b03621ca750f8df"
+            }
+          ]
+        }
+      }
+    }
+  },
   "source": {
     "commit": "9704da33003b74755315ab1d05e5f2cf8ac90501",
     "sha256": "259d060e5abf624349076be4365701967fe345483c36fdb063c8a433b9a69ae1",
@@ -50,6 +214,7 @@
     "status": "VALIDATORS_TIMEOUT",
     "sdk_result": "TIMEOUT",
     "sdk_num_of_rounds": 6,
+    "sdk_terminal_round": 5,
     "explorer_result": "MAJORITY_TIMEOUT",
     "explorer_execution": "NONDET_DISAGREE",
     "submission_timestamp": 1786555033,
@@ -57,7 +222,7 @@
     "finalization_timestamp": 0,
     "explorer_round_count": 7,
     "last_round": {
-      "round": 0,
+      "explorer_round_field": 0,
       "explorer_result": "MAJORITY_TIMEOUT",
       "votes_committed": 5,
       "votes_revealed": 5,
@@ -100,14 +265,22 @@
       "power_tier": 2
     },
     "state_after_terminal_timeout": {
-      "mapping_count": 0,
-      "request_lookup": "[EXPECTED] Unknown request_id",
-      "asset_lookup": "[EXPECTED] Asset has not been mapped",
+      "latest-final": {
+        "mapping_count": 0,
+        "request_lookup": "[EXPECTED] Unknown request_id",
+        "asset_lookup": "[EXPECTED] Asset has not been mapped"
+      },
+      "latest-nonfinal": {
+        "mapping_count": 0,
+        "request_lookup": "[EXPECTED] Unknown request_id",
+        "asset_lookup": "[EXPECTED] Asset has not been mapped"
+      },
       "record_created": false,
       "request_index_created": false,
       "asset_index_created": false
     },
-    "retry_performed": false,
+    "retry_performed_by_this_release_harness": false,
+    "retry_recorded_in_checkpoint": false,
     "finalized_semantic_result_claimed": false
   },
   "studionet_semantic_test": {
@@ -119,17 +292,22 @@
     "element_id": "FIRE",
     "rarity_tier": 3,
     "power_tier": 2,
-    "exact_result_test_passed": true
+    "exact_result_test_passed": true,
+    "evidence_basis": "reported_by_test_harness",
+    "transaction_or_vote_artifact_recorded": false
   },
   "full_checkpoint": {
     "path": "deployments/bradbury-2026-08-12-v2.0.2-timeout-incomplete.json",
     "sha256": "73c1787fe1375f6e1c5214941760b292344d72288e24d7d9c100044061aa3879",
-    "bytes": 513934
+    "bytes": 513934,
+    "record_status": "IN_PROGRESS",
+    "contains_terminal_timeout_evidence": false,
+    "purpose": "Fail-closed pre-terminal checkpoint; terminal SDK and Explorer subsets are preserved separately above."
   },
   "limitations": [
     "The Bradbury contract deployment finalized with five AGREE votes.",
     "The Bradbury semantic smoke did not reach positive consensus and created no mapping state.",
     "The candidate output is recorded only for transparency and is not a finalized contract result.",
-    "No semantic retry was submitted for this deployment."
+    "This release harness performed no semantic retry, and the checkpoint records none."
   ]
 }

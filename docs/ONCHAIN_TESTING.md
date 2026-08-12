@@ -33,6 +33,44 @@ https://raw.githubusercontent.com/Leokings/genlayer-ic-public-fixtures/d22e122aa
 
 The exact image SHA-256 is `c86aefbd3140da84536192d5518c59dfaf2ef56ae7595825db934e4b94768fcb` over 58,501 bytes. Both URLs are commit-pinned; compute and independently verify both response digests immediately before the run.
 
+## Recorded 2026-08-12 results
+
+StudioNet exact-result testing was reported by the test harness as passing at
+`0x5b24a46Eb67b0B5d7076Ea5e542c7bfB2717b180` with `MAPPED`, reason
+`ASSET_ADMITTED_AND_MAPPED`, and profile
+`EMBERGUARD_HEAVY_ARMOR_FIRE_R3_P2` (`HEAVY_ARMOR`, `FIRE`, rarity 3,
+power 2). This release does not include a StudioNet transaction/vote artifact.
+
+The source at commit `9704da33003b74755315ab1d05e5f2cf8ac90501`
+deployed on Bradbury at `0x60F385056d8FD7d4CFcD496764Ff92EDf5Ce6Bf7`.
+Deployment transaction
+`0x04d685f9b00b06e0d041931497e5003f11ad5cf353bd87374a9bd1d99c1354b1`
+finalized with 5/5 `AGREE` votes; its verified EVM finalizer transaction is
+`0x16f38a5202436d50d45a045bf850b4a1fcf1c64803901d2f53151d0e56869d32`.
+
+Semantic transaction
+`0x8b9505cbff65788371fe54e79855b35d52e4dd45768d38eb8c376cc56915b0db`
+ended in validator timeout. Preserve the two API vocabularies instead of
+conflating them: the SDK reports result `TIMEOUT`, `numOfRounds = 6`, and a
+last-round first vote of `DETERMINISTIC_VIOLATION`; the explorer exposes seven
+raw round entries, terminal result/execution `MAJORITY_TIMEOUT` /
+`NONDET_DISAGREE`, and labels that first vote `NONDET_DISAGREE`. Both show four
+other `TIMEOUT` votes. Reads under both `latest-final` and `latest-nonfinal`
+showed no record or indexes and `mapping_count` zero. This release harness made
+no retry, and the checkpoint records none.
+
+Use
+`deployments/bradbury-2026-08-12-v2.0.2-timeout-audit.json` for the concise
+release statement and
+`deployments/bradbury-2026-08-12-v2.0.2-timeout-incomplete.json` for the full
+fail-closed harness checkpoint. The checkpoint is pre-terminal `IN_PROGRESS`
+evidence and does not contain the eventual timeout rounds. The concise audit
+separately embeds SHA-256-committed terminal subsets retrieved through
+genlayer-js 1.1.8 `getTransaction`, `waitForTransactionReceipt`, and the official
+Explorer API. Neither file claims a finalized Bradbury semantic result. The
+commands below document a future fresh proof run, not a resume or completion of
+that terminal transaction.
+
 ## StudioNet
 
 ```powershell
@@ -135,6 +173,11 @@ The harness refuses a mismatch between `ASSET_MAPPER_DEPLOY_NETWORK` and the act
 
 It writes a deployment checkpoint before broadcasting the semantic smoke and refuses to overwrite an existing record. Only a record already marked `COMPLETE` can be re-verified by setting `ASSET_MAPPER_RESUME=1`. Interrupted or evidence-incomplete checkpoints cannot be resumed, supplied with arbitrary recovery JSON, or resubmitted by the harness: preserve them for audit and use a new output path and fresh deployment. This deliberately trades recovery convenience for fail-closed proof provenance. A record becomes `COMPLETE` only when both receipts are explicitly `FINALIZED`, prove successful execution, contain transaction identifiers, expose nonempty validator and vote data, and the exact stored mapping and global asset lookup match the configured fixture.
 
-Review the local proof, verify the address and transactions independently in the explorer, then copy it to a reviewed non-`.local.json` deployment record before committing.
+Review the local proof and verify the address and transactions independently in
+the explorer before committing. Preserve incomplete/timeout checkpoints under a
+truthful filename and publish a concise audit that states exactly which stages
+did and did not finalize.
 
-`ACCEPTED` and `FINALIZED` lifecycle labels alone do not prove execution succeeded. Do not claim a Bradbury deployment while `deployments/bradbury-template.json` still contains placeholders.
+`ACCEPTED` and `FINALIZED` lifecycle labels alone do not prove execution
+succeeded. The committed v2.0.2 audit proves the Bradbury deployment separately
+from the semantic timeout; the untouched template is not release evidence.
