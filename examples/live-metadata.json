@@ -2,12 +2,16 @@
   "attributes": [
     {
       "trait_type": "asset_type",
-      "value": "software_language_emblem"
+      "value": "heavy_plate_cuirass"
+    },
+    {
+      "trait_type": "elemental_focus",
+      "value": "fire"
     }
   ],
-  "collection_id": "demo:public-emblems",
-  "description": "The Python programming-language emblem used as a neutral cosmetic game badge.",
-  "image": "https://raw.githubusercontent.com/github/explore/cf281c705f963b71a359a2afb0adeb922bc0b369/topics/python/python.png",
-  "name": "Python Emblem",
-  "token_reference": "python-emblem-1"
+  "collection_id": "demo:emberguard-armor",
+  "description": "A standalone dark heavy plate cuirass with a bright orange fire crystal set in the chest.",
+  "image": "https://raw.githubusercontent.com/Leokings/genlayer-ic-public-fixtures/c5a1fb7503d2af3e3ec7dfae47830940f6ab9cd5/fixtures/assets/emberguard-heavy-armor.png",
+  "name": "Emberguard Heavy Armor",
+  "token_reference": "emberguard-heavy-armor-1"
 }

@@ -1,29 +1,29 @@
 {
-  "admission_rules": "Admit a clearly visible standalone software-language emblem as a cosmetic game badge; reject unrelated, unreadable, or multi-object images.",
+  "admission_rules": "Admit only a single clearly visible standalone dark heavy plate cuirass with a bright orange fire crystal mounted in the chest on a plain neutral background; reject characters, multiple objects, light armor, non-fire crystals, or unclear images.",
   "class_power_caps": {
-    "COSMETIC_EMBLEM": 1
+    "HEAVY_ARMOR": 2
   },
   "collection_sources": [
     {
-      "collection_id": "demo:public-emblems",
+      "collection_id": "demo:emberguard-armor",
       "image_domain": "raw.githubusercontent.com",
-      "image_path_prefix": "/github/explore/cf281c705f963b71a359a2afb0adeb922bc0b369/topics/python/",
-      "metadata_domain": "gist.githubusercontent.com",
-      "metadata_path_prefix": "/Leokings/b61f3173ee0c04183e35682f353d2605/raw/289239399f6941b2c11f7ba5b4c045018fe7f733/"
+      "image_path_prefix": "/Leokings/genlayer-ic-public-fixtures/c5a1fb7503d2af3e3ec7dfae47830940f6ab9cd5/fixtures/assets/",
+      "metadata_domain": "raw.githubusercontent.com",
+      "metadata_path_prefix": "/Leokings/genlayer-ic-public-fixtures/225251710d96fa4349c3c5d98ea6b6873ee1959e/fixtures/metadata/"
     }
   ],
-  "max_power_tier": 1,
-  "max_rarity_tier": 1,
-  "policy_id": "PUBLIC-EMBLEM-ADMISSION",
-  "policy_version": "2",
+  "max_power_tier": 2,
+  "max_rarity_tier": 3,
+  "policy_id": "EMBERGUARD-HEAVY-ARMOR-ADMISSION",
+  "policy_version": "1",
   "trait_profiles": [
     {
-      "class_id": "COSMETIC_EMBLEM",
-      "description": "A clearly visible standalone software-language emblem suitable only as a cosmetic badge.",
-      "element_id": "NONE",
-      "power_tier": 1,
-      "profile_id": "COSMETIC_EMBLEM_NONE_R1_P1",
-      "rarity_tier": 1
+      "class_id": "HEAVY_ARMOR",
+      "description": "A standalone dark heavy plate cuirass whose central chest setting contains a clearly visible bright orange fire crystal.",
+      "element_id": "FIRE",
+      "power_tier": 2,
+      "profile_id": "EMBERGUARD_HEAVY_ARMOR_FIRE_R3_P2",
+      "rarity_tier": 3
     }
   ]
 }

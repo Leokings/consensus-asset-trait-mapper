@@ -203,7 +203,7 @@ def test_pinned_live_metadata_fixture_matches_policy_and_documented_digest():
     source = policy["collection_sources"][0]
 
     assert hashlib.sha256(metadata_bytes).hexdigest() == (
-        "1918ccd13ec9bada556c95099687d410a32ef9df85b9a29d6c6c8c93f32082bf"
+        "a23e88a1f7253928a073f5f16534bf70ebbd7029a1e702b17914c05432e2f27d"
     )
     assert metadata["collection_id"] == source["collection_id"]
     assert metadata["image"].startswith(

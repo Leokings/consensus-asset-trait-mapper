@@ -19,10 +19,16 @@ Set every variable in `.env.example`. Replace all placeholders. `ASSET_MAPPER_SO
 The repository includes a prepared immutable metadata fixture at:
 
 ```text
-https://gist.githubusercontent.com/Leokings/b61f3173ee0c04183e35682f353d2605/raw/289239399f6941b2c11f7ba5b4c045018fe7f733/live-metadata.json
+https://raw.githubusercontent.com/Leokings/genlayer-ic-public-fixtures/225251710d96fa4349c3c5d98ea6b6873ee1959e/fixtures/metadata/emberguard-heavy-armor.json
 ```
 
-Its exact SHA-256 is `1918ccd13ec9bada556c95099687d410a32ef9df85b9a29d6c6c8c93f32082bf`. GitHub Gist serves this raw file as `text/plain`; V2 accepts that MIME only as a transport container after exact digest verification, then applies the same strict JSON, identity, source-prefix, and image-URL checks. The metadata binds the commit-pinned Python-emblem image URL in `examples/live-metadata.json`; compute and independently verify the image response digest immediately before the run.
+Its exact SHA-256 is `a23e88a1f7253928a073f5f16534bf70ebbd7029a1e702b17914c05432e2f27d`. GitHub Raw serves this strict JSON file as `text/plain`; V2 accepts that MIME only as a transport container after exact digest verification, then applies the same strict JSON, identity, source-prefix, and image-URL checks. The metadata binds this independently pinned image:
+
+```text
+https://raw.githubusercontent.com/Leokings/genlayer-ic-public-fixtures/c5a1fb7503d2af3e3ec7dfae47830940f6ab9cd5/fixtures/assets/emberguard-heavy-armor.png
+```
+
+The exact image SHA-256 is `fdcf0cc4742d841a94514c629ce9f46466a6588f8880c695832fcc25bf6c2f9c` over 402,248 bytes. Both URLs are commit-pinned; compute and independently verify both response digests immediately before the run.
 
 ## StudioNet
 
