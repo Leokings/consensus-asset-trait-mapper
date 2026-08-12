@@ -17,6 +17,7 @@
 - Exact metadata and image SHA-256 commitments
 - Exact metadata collection, token-reference, and image-URL binding
 - MIME, signature, byte, content-length, and canonical-metadata limits
+- Digest-pinned `text/plain` metadata support for immutable raw-file hosts, with unchanged strict JSON and binding validation
 - Closed statuses, reasons, profiles, and deterministic trait expansion
 - Global and per-class deterministic tier caps
 - Evidence framed as untrusted data in leader and audit prompts

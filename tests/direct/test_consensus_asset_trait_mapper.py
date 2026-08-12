@@ -412,7 +412,7 @@ def test_integrity_failure_does_not_poison_asset(
 @pytest.mark.parametrize(
     ("kwargs", "status"),
     [
-        ({"metadata_type": b"text/plain"}, "INVALID_SOURCE_FORMAT"),
+        ({"metadata_type": b"text/html"}, "INVALID_SOURCE_FORMAT"),
         ({"metadata_body": b"{invalid"}, "INVALID_SOURCE_FORMAT"),
         ({"image_type": b"text/plain"}, "INVALID_SOURCE_FORMAT"),
         ({"image_body": b"not-a-real-image-but-long-enough"}, "INVALID_SOURCE_FORMAT"),
@@ -427,6 +427,15 @@ def test_source_format_and_content_limits_are_distinct_from_semantic_unsupported
     metadata_body, image_body = mock_sources(direct_vm, **kwargs)
     submit(mapper, metadata_body, image_body)
     assert mapper.get_mapping(1)["status"] == status
+
+
+def test_digest_pinned_text_plain_metadata_is_parsed_as_strict_json(direct_vm, direct_deploy):
+    mapper = deploy_mapper(direct_vm, direct_deploy)
+    metadata_body, image_body = mock_sources(direct_vm, metadata_type=b"text/plain; charset=utf-8")
+    mock_mapping(direct_vm)
+
+    submit(mapper, metadata_body, image_body)
+    assert mapper.get_mapping(1)["status"] == "MAPPED"
 
 
 def test_duplicate_metadata_keys_are_invalid_source_format(direct_vm, direct_deploy):

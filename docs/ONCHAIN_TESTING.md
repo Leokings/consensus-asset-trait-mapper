@@ -22,7 +22,7 @@ The repository includes a prepared immutable metadata fixture at:
 https://gist.githubusercontent.com/Leokings/b61f3173ee0c04183e35682f353d2605/raw/289239399f6941b2c11f7ba5b4c045018fe7f733/live-metadata.json
 ```
 
-Its exact SHA-256 is `1918ccd13ec9bada556c95099687d410a32ef9df85b9a29d6c6c8c93f32082bf`. The metadata binds the commit-pinned Python-emblem image URL in `examples/live-metadata.json`; compute and independently verify the image response digest immediately before the run.
+Its exact SHA-256 is `1918ccd13ec9bada556c95099687d410a32ef9df85b9a29d6c6c8c93f32082bf`. GitHub Gist serves this raw file as `text/plain`; V2 accepts that MIME only as a transport container after exact digest verification, then applies the same strict JSON, identity, source-prefix, and image-URL checks. The metadata binds the commit-pinned Python-emblem image URL in `examples/live-metadata.json`; compute and independently verify the image response digest immediately before the run.
 
 ## StudioNet
 
@@ -45,7 +45,7 @@ gltest deploy\001_deploy_and_smoke.py -v -s --network testnet_bradbury
 
 The harness refuses a mismatch between `ASSET_MAPPER_DEPLOY_NETWORK` and the actual `--network`. It waits for `FINALIZED`, separately checks execution, validates the exact persisted result, and records complete receipts plus discovered validator/vote/consensus fields.
 
-It writes a deployment checkpoint before broadcasting the semantic smoke. It refuses to overwrite an existing record or blindly replay an uncertain transaction. To inspect or continue a checkpoint, set `ASSET_MAPPER_RESUME=1`. If mapping count remains zero, inspect the network first and set `ASSET_MAPPER_RESUME_SUBMIT=1` only when resubmission is safe. If state advanced but the process lost its receipt, supply the complete explorer receipt as `ASSET_MAPPER_RESUME_MAPPING_RECEIPT_JSON`; a bare transaction hash is not accepted as full proof. A record cannot become `COMPLETE` unless the mapping receipt exposes validator, vote, or consensus evidence; an execution-only checkpoint is preserved with an explicit incomplete status.
+It writes a deployment checkpoint before broadcasting the semantic smoke and refuses to overwrite an existing record. Only a record already marked `COMPLETE` can be re-verified by setting `ASSET_MAPPER_RESUME=1`. Interrupted or evidence-incomplete checkpoints cannot be resumed, supplied with arbitrary recovery JSON, or resubmitted by the harness: preserve them for audit and use a new output path and fresh deployment. This deliberately trades recovery convenience for fail-closed proof provenance. A record becomes `COMPLETE` only when both receipts are explicitly `FINALIZED`, prove successful execution, contain transaction identifiers, expose nonempty validator and vote data, and the exact stored mapping and global asset lookup match the configured fixture.
 
 Review the local proof, verify the address and transactions independently in the explorer, then copy it to a reviewed non-`.local.json` deployment record before committing.
 

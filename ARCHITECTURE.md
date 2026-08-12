@@ -55,7 +55,7 @@ The contract keeps source problems distinct:
 
 - `SOURCE_UNAVAILABLE`: non-success response or empty body
 - `INTEGRITY_FAILURE`: SHA-256 mismatch
-- `INVALID_SOURCE_FORMAT`: malformed/duplicate/nonfinite JSON, unsupported MIME, or invalid image signature
+- `INVALID_SOURCE_FORMAT`: malformed/duplicate/nonfinite JSON, unsupported MIME, or invalid image signature. Digest-pinned `text/plain` metadata is permitted because common immutable raw-file hosts use that MIME type, but the bytes still undergo strict JSON parsing and every identity/source check.
 - `CONTENT_LIMIT`: byte, canonical-text, or content-length limit
 
 None reserves the asset identity. `UNSUPPORTED_ASSET` is reserved for valid evidence that semantically fits no configured profile.

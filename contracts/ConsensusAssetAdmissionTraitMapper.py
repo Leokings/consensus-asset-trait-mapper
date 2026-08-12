@@ -539,7 +539,7 @@ def _fetch_asset(
         return None, b"", _terminal_result(STATUS_SOURCE_UNAVAILABLE)
     if len(metadata_body) > MAX_METADATA_BYTES or not _content_length_valid(metadata_response.headers, len(metadata_body)):
         return None, b"", _terminal_result(STATUS_CONTENT_LIMIT)
-    if metadata_media not in ("application/json", "application/ld+json") and not metadata_media.endswith("+json"):
+    if metadata_media not in ("application/json", "application/ld+json", "text/plain") and not metadata_media.endswith("+json"):
         return None, b"", _terminal_result(STATUS_INVALID_SOURCE_FORMAT)
     if _sha256_hex(metadata_body) != metadata_sha256:
         return None, b"", _terminal_result(STATUS_INTEGRITY_FAILURE)

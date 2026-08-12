@@ -88,18 +88,47 @@ def _json_safe(value):
 
 
 def _consensus_evidence(value, path="receipt"):
+    def has_payload(item):
+        if isinstance(item, str):
+            return len(item.strip()) > 0
+        if isinstance(item, dict):
+            return any(has_payload(child) for child in item.values())
+        if isinstance(item, (list, tuple)):
+            return any(has_payload(child) for child in item)
+        if isinstance(item, int) and not isinstance(item, bool):
+            return item > 0
+        return False
+
     found = {}
     if isinstance(value, dict):
         for key, item in value.items():
             child_path = f"{path}.{key}"
             lowered = str(key).lower()
-            if "vote" in lowered or "validator" in lowered or "consensus" in lowered:
+            is_vote_data = lowered == "vote" or lowered == "votes"
+            is_validator_data = lowered in {
+                "validators",
+                "validator_addresses",
+                "validator_receipts",
+            }
+            if (is_vote_data or is_validator_data) and has_payload(item):
                 found[child_path] = _json_safe(item)
             found.update(_consensus_evidence(item, child_path))
     elif isinstance(value, (list, tuple)):
         for index, item in enumerate(value):
             found.update(_consensus_evidence(item, f"{path}[{index}]"))
     return found
+
+
+def _has_actual_consensus_evidence(evidence):
+    paths = [path.lower() for path in evidence]
+    has_vote_data = any(".vote" in path for path in paths)
+    has_validator_data = any(
+        ".validators" in path
+        or ".validator_addresses" in path
+        or ".validator_receipts" in path
+        for path in paths
+    )
+    return has_vote_data and has_validator_data
 
 
 def _transaction_identifiers(value):
@@ -123,6 +152,21 @@ def _transaction_identifiers(value):
 
     visit(value, "")
     return result
+
+
+def _assert_finalized_successful_receipt(receipt, label):
+    if not isinstance(receipt, dict):
+        raise AssertionError(f"{label} receipt must be an object")
+    status = receipt.get("status_name", receipt.get("status", ""))
+    status_text = str(status).strip().upper()
+    if status_text != "FINALIZED" and not status_text.endswith(".FINALIZED"):
+        raise AssertionError(f"{label} receipt is not explicitly FINALIZED")
+    if not tx_execution_succeeded(receipt):
+        raise AssertionError(f"{label} receipt does not prove successful execution")
+    identifiers = _transaction_identifiers(receipt)
+    if not identifiers:
+        raise AssertionError(f"{label} receipt contains no transaction identifier")
+    return identifiers
 
 
 def _output_path(network):
@@ -255,7 +299,7 @@ def test_deploy_and_smoke_finalized():
     record = None
     if output.exists():
         if os.environ.get("ASSET_MAPPER_RESUME") != "1":
-            raise AssertionError("Proof checkpoint exists; set ASSET_MAPPER_RESUME=1 to verify or resume it")
+            raise AssertionError("Proof checkpoint exists; set ASSET_MAPPER_RESUME=1 only to re-verify a COMPLETE record")
         record = _strict_json(output.read_text(encoding="utf-8"))
         _assert_resume_record(
             record,
@@ -267,24 +311,42 @@ def test_deploy_and_smoke_finalized():
             fixture,
             expected,
         )
+        if record.get("record_status") != "COMPLETE":
+            raise AssertionError(
+                "Interrupted proof checkpoints cannot be resumed safely. Inspect the existing deployment, "
+                "preserve the incomplete record, and run a fresh deployment using a new output file."
+            )
         contract = factory.build_contract(contract_address=record["contract_address"])
         policy = contract.get_policy().call()
         if _json_safe(policy) != record["policy"]:
             raise AssertionError("On-chain policy differs from the checkpoint")
-        if record.get("record_status") == "COMPLETE":
-            if not record.get("mapping_consensus_evidence"):
-                raise AssertionError("Completed proof is missing mapping validator/vote evidence")
-            persisted = contract.get_mapping(args=[record["mapping_id"]]).call()
-            _assert_exact_result(persisted, fixture, expected)
-            if contract.get_mapping_by_asset(
-                args=[fixture["collection_id"], fixture["token_reference"]]
-            ).call() != persisted:
-                raise AssertionError("Global asset lookup differs from the completed proof")
-            if _json_safe(persisted) != record["persisted_result"]:
-                raise AssertionError("On-chain mapping differs from the completed proof")
-            print(f"contract_address={contract.address}")
-            print(f"deployment_proof={output}")
-            return
+        deployment_ids = _assert_finalized_successful_receipt(record.get("deployment_receipt"), "Deployment")
+        mapping_ids = _assert_finalized_successful_receipt(record.get("mapping_receipt"), "Mapping")
+        if deployment_ids != record.get("deployment_transaction_identifiers"):
+            raise AssertionError("Deployment transaction identifiers differ from the completed proof")
+        if mapping_ids != record.get("mapping_transaction_identifiers"):
+            raise AssertionError("Mapping transaction identifiers differ from the completed proof")
+        deployment_consensus = _consensus_evidence(record["deployment_receipt"])
+        mapping_consensus = _consensus_evidence(record["mapping_receipt"])
+        if not _has_actual_consensus_evidence(deployment_consensus):
+            raise AssertionError("Completed proof lacks nonempty deployment validator/vote evidence")
+        if not _has_actual_consensus_evidence(mapping_consensus):
+            raise AssertionError("Completed proof lacks nonempty mapping validator/vote evidence")
+        if deployment_consensus != record.get("deployment_consensus_evidence"):
+            raise AssertionError("Deployment consensus evidence differs from the completed proof")
+        if mapping_consensus != record.get("mapping_consensus_evidence"):
+            raise AssertionError("Mapping consensus evidence differs from the completed proof")
+        persisted = contract.get_mapping(args=[record["mapping_id"]]).call()
+        _assert_exact_result(persisted, fixture, expected)
+        if contract.get_mapping_by_asset(
+            args=[fixture["collection_id"], fixture["token_reference"]]
+        ).call() != persisted:
+            raise AssertionError("Global asset lookup differs from the completed proof")
+        if _json_safe(persisted) != record["persisted_result"]:
+            raise AssertionError("On-chain mapping differs from the completed proof")
+        print(f"contract_address={contract.address}")
+        print(f"deployment_proof={output}")
+        return
     else:
         deployment_receipt = factory.deploy_contract_tx(
             args=[policy_json],
@@ -293,9 +355,11 @@ def test_deploy_and_smoke_finalized():
         if not tx_execution_succeeded(deployment_receipt):
             raise AssertionError(f"Deployment execution failed: {deployment_receipt}")
         safe_deployment_receipt = _json_safe(deployment_receipt)
-        deployment_transactions = _transaction_identifiers(safe_deployment_receipt)
-        if not deployment_transactions:
-            raise AssertionError("Finalized deployment receipt contains no transaction identifier")
+        deployment_transactions = _assert_finalized_successful_receipt(
+            safe_deployment_receipt,
+            "Deployment",
+        )
+        deployment_consensus = _consensus_evidence(safe_deployment_receipt)
         contract_address = extract_contract_address(deployment_receipt)
         contract = factory.build_contract(contract_address=contract_address)
         policy = contract.get_policy().call()
@@ -319,7 +383,7 @@ def test_deploy_and_smoke_finalized():
             "deployment_input_bytes": deployment_input_bytes,
             "deployment_receipt": safe_deployment_receipt,
             "deployment_transaction_identifiers": deployment_transactions,
-            "deployment_consensus_evidence": _consensus_evidence(safe_deployment_receipt),
+            "deployment_consensus_evidence": deployment_consensus,
             "fixture": fixture,
             "expected_result": expected,
             "mapping_id": 0,
@@ -334,6 +398,13 @@ def test_deploy_and_smoke_finalized():
             ],
         }
         _atomic_write_json(output, record)
+        if not _has_actual_consensus_evidence(deployment_consensus):
+            record["record_status"] = "DEPLOYMENT_FINALIZED_CONSENSUS_EVIDENCE_MISSING"
+            _atomic_write_json(output, record)
+            raise AssertionError(
+                "The finalized deployment receipt lacks nonempty validator/vote evidence. The fail-closed "
+                "checkpoint cannot be resumed; preserve it and use a fresh output/deployment after fixing receipt capture."
+            )
 
     if record is None:
         raise AssertionError("Missing deployment checkpoint")
@@ -342,44 +413,23 @@ def test_deploy_and_smoke_finalized():
     if policy["policy_digest"] != record["policy_digest"] or policy["policy_json"] != record["policy_json"]:
         raise AssertionError("On-chain immutable policy differs from checkpoint")
 
-    mapping_count = contract.get_mapping_count().call()
-    if mapping_count == 0:
-        if output.exists() and os.environ.get("ASSET_MAPPER_RESUME") == "1" and os.environ.get("ASSET_MAPPER_RESUME_SUBMIT") != "1":
-            raise AssertionError(
-                "No mapping is finalized; inspect for a pending transaction, then set "
-                "ASSET_MAPPER_RESUME_SUBMIT=1 only when resubmission is safe"
-            )
-        mapping_receipt = contract.map_asset(
-            args=[
-                fixture["request_id"],
-                fixture["collection_id"],
-                fixture["token_reference"],
-                fixture["metadata_url"],
-                fixture["metadata_sha256"],
-                fixture["image_url"],
-                fixture["image_sha256"],
-            ]
-        ).transact(wait_transaction_status=TransactionStatus.FINALIZED)
-        if not tx_execution_succeeded(mapping_receipt):
-            raise AssertionError(f"Mapping execution failed: {mapping_receipt}")
-        safe_mapping_receipt = _json_safe(mapping_receipt)
-    elif mapping_count == 1:
-        supplied_receipt = os.environ.get("ASSET_MAPPER_RESUME_MAPPING_RECEIPT_JSON", "").strip()
-        if supplied_receipt:
-            safe_mapping_receipt = _strict_json(supplied_receipt)
-        elif record.get("mapping_receipt"):
-            safe_mapping_receipt = record["mapping_receipt"]
-        else:
-            raise AssertionError(
-                "Mapping state exists but its receipt was not checkpointed; provide the complete finalized "
-                "ASSET_MAPPER_RESUME_MAPPING_RECEIPT_JSON recovered from the explorer"
-            )
-    else:
-        raise AssertionError("Fresh proof deployment contains an unexpected number of mapping records")
-
-    mapping_transactions = _transaction_identifiers(safe_mapping_receipt)
-    if not mapping_transactions:
-        raise AssertionError("Finalized mapping receipt contains no transaction identifier")
+    if contract.get_mapping_count().call() != 0:
+        raise AssertionError("Fresh proof deployment unexpectedly contains a mapping record")
+    mapping_receipt = contract.map_asset(
+        args=[
+            fixture["request_id"],
+            fixture["collection_id"],
+            fixture["token_reference"],
+            fixture["metadata_url"],
+            fixture["metadata_sha256"],
+            fixture["image_url"],
+            fixture["image_sha256"],
+        ]
+    ).transact(wait_transaction_status=TransactionStatus.FINALIZED)
+    if not tx_execution_succeeded(mapping_receipt):
+        raise AssertionError(f"Mapping execution failed: {mapping_receipt}")
+    safe_mapping_receipt = _json_safe(mapping_receipt)
+    mapping_transactions = _assert_finalized_successful_receipt(safe_mapping_receipt, "Mapping")
     mapping_consensus = _consensus_evidence(safe_mapping_receipt)
     persisted = contract.get_mapping(args=[1]).call()
     _assert_exact_result(persisted, fixture, expected)
@@ -393,7 +443,7 @@ def test_deploy_and_smoke_finalized():
 
     record["record_status"] = (
         "COMPLETE"
-        if mapping_consensus
+        if _has_actual_consensus_evidence(mapping_consensus)
         else "FINALIZED_EXECUTION_VERIFIED_CONSENSUS_EVIDENCE_MISSING"
     )
     record["recorded_at"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
@@ -403,11 +453,10 @@ def test_deploy_and_smoke_finalized():
     record["mapping_consensus_evidence"] = mapping_consensus
     record["persisted_result"] = _json_safe(persisted)
     _atomic_write_json(output, record)
-    if not mapping_consensus:
+    if not _has_actual_consensus_evidence(mapping_consensus):
         raise AssertionError(
-            "The finalized mapping receipt exposed no validator/vote/consensus evidence; the checkpoint "
-            "records verified execution but is not a COMPLETE publication proof. Recover a complete explorer "
-            "receipt and resume with ASSET_MAPPER_RESUME_MAPPING_RECEIPT_JSON."
+            "The finalized mapping receipt exposed no nonempty validator/vote evidence. The fail-closed "
+            "checkpoint records verified execution but cannot be resumed or published as COMPLETE."
         )
     print(f"contract_address={contract.address}")
     print(f"deployment_proof={output}")

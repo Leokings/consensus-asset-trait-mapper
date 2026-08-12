@@ -78,7 +78,7 @@ genvm-lint schema contracts\ConsensusAssetAdmissionTraitMapper.py --json
 pytest tests\direct -q
 ```
 
-Current suite: **56 direct tests**, including validator-hook tests for audit acceptance/rejection, malformed audits, changed evidence, terminal-result equivalence, transient-error parity, and deployable repository fixtures.
+Current suite: **57 direct tests**, including validator-hook tests for audit acceptance/rejection, malformed audits, changed evidence, terminal-result equivalence, transient-error parity, deployable repository fixtures, and digest-pinned `text/plain` JSON metadata.
 
 ## StudioNet and Bradbury
 
@@ -101,7 +101,7 @@ gltest deploy\001_deploy_and_smoke.py -v -s --network studionet
 ```
 
 It refuses missing/placeholder evidence, a network-label mismatch, an unpinned runner, a non-full source commit, or a source-plus-policy deployment input above 50,000 bytes.
-It checkpoints the finalized deployment before submitting the semantic smoke, refuses to overwrite an existing record, and requires an explicit inspected-resume flag before any resubmission. A recovered run must provide the complete finalized mapping receipt, not only a transaction hash. The record cannot become `COMPLETE` unless the mapping receipt exposes validator, vote, or consensus evidence.
+It checkpoints the finalized deployment before submitting the semantic smoke and refuses to overwrite an existing record. Only an already-`COMPLETE` proof may be re-verified with `ASSET_MAPPER_RESUME=1`; interrupted runs fail closed and must use a fresh output file and deployment. The record cannot become `COMPLETE` unless both finalized receipts prove successful execution and expose nonempty validator and vote evidence.
 
 ## Limitations
 
@@ -109,6 +109,7 @@ It checkpoints the finalized deployment before submitting the semantic smoke, re
 - All submitted evidence is public.
 - GenVM currently does not expose the final HTTP redirect destination; exact host/path checks apply to submitted and metadata-declared URLs, not a hidden redirect target.
 - Digest equality proves byte stability, not ownership or legal rights.
+- Metadata served as `text/plain` is accepted only as a transport container: its exact bytes remain digest-pinned and must pass the same strict JSON, identity, URL-binding, and size checks.
 - Correlated vision-model errors remain possible; keep consequences bounded and retain an appeal path.
 - Consumers must wait for finality and pin both contract address and `policy_digest`.
 
