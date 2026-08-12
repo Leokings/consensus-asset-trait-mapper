@@ -35,6 +35,8 @@ const TRANSACTION_FINALIZED_EVENT_TOPIC = keccak256(
   stringToHex("TransactionFinalized(bytes32)"),
 ).toLowerCase();
 const MAX_LOG_QUERY_BLOCKS = 10_000n;
+const FINALIZATION_RECOVERY_REORG_MARGIN = 128n;
+const MAX_SAFE_BLOCK_NUMBER = BigInt(Number.MAX_SAFE_INTEGER);
 const MAX_DEPLOYMENT_INPUT_BYTES = 50_000;
 const EXPECTED_GENVM_CHAIN_ID = 1;
 const LIVE_POLICY_SHA256 =
@@ -975,6 +977,78 @@ function assertExactFinalizationLog(
   }
 }
 
+function canonicalSafeBlockNumber(value, label) {
+  let block;
+  if (typeof value === "bigint") {
+    block = value;
+  } else if (typeof value === "number") {
+    if (!Number.isSafeInteger(value)) {
+      throw new Error(`${label} is not a safe integer`);
+    }
+    block = BigInt(value);
+  } else if (/^(?:0|[1-9][0-9]*)$/.test(String(value ?? ""))) {
+    block = BigInt(value);
+  } else {
+    throw new Error(`${label} is not a canonical decimal block number`);
+  }
+  if (block < 0n || block > MAX_SAFE_BLOCK_NUMBER) {
+    throw new Error(`${label} is outside the safe block-number range`);
+  }
+  return block;
+}
+
+export function finalizationRecoveryStartBlock(transaction, transactionHash) {
+  assertHash(transactionHash, "finalization recovery GenLayer transaction hash");
+  if (!transaction || typeof transaction !== "object") {
+    throw new Error("Finalization recovery GenLayer transaction is absent");
+  }
+
+  const identifiers = [
+    mapValue(transaction, "txId"),
+    mapValue(transaction, "tx_id"),
+    mapValue(transaction, "hash"),
+    mapValue(transaction, "transactionHash"),
+    mapValue(transaction, "transaction_hash"),
+  ].filter((value) => value !== undefined && value !== null && value !== "");
+  if (identifiers.length === 0) {
+    throw new Error("Finalization recovery transaction omitted its identifier");
+  }
+  for (const identifier of identifiers) {
+    assertHash(identifier, "finalization recovery transaction identifier");
+    if (String(identifier).toLowerCase() !== transactionHash.toLowerCase()) {
+      throw new Error("Finalization recovery transaction identifier mismatch");
+    }
+  }
+
+  const ranges = [
+    mapValue(transaction, "readStateBlockRange"),
+    mapValue(transaction, "read_state_block_range"),
+  ].filter((value) => value !== undefined && value !== null);
+  const activationValues = [];
+  for (const range of ranges) {
+    for (const key of ["activationBlock", "activation_block"]) {
+      const value = mapValue(range, key);
+      if (value !== undefined && value !== null && value !== "") {
+        activationValues.push(value);
+      }
+    }
+  }
+  if (activationValues.length === 0) {
+    throw new Error(
+      "Finalization recovery transaction omitted read-state activation block",
+    );
+  }
+  const activationBlocks = activationValues.map((value) =>
+    canonicalSafeBlockNumber(value, "read-state activation block"),
+  );
+  if (activationBlocks.some((block) => block !== activationBlocks[0])) {
+    throw new Error("Finalization recovery activation block aliases conflict");
+  }
+  return activationBlocks[0] > FINALIZATION_RECOVERY_REORG_MARGIN
+    ? activationBlocks[0] - FINALIZATION_RECOVERY_REORG_MARGIN
+    : 0n;
+}
+
 export async function verifyFinalizationEvmTransaction(
   client,
   evmHash,
@@ -1063,14 +1137,27 @@ export async function recoverFinalizationEvmTransaction(
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     let logs;
     try {
+      const genlayerTransaction = await client.getTransaction({
+        hash: transactionHash,
+      });
+      const recoveryStartBlock = finalizationRecoveryStartBlock(
+        genlayerTransaction,
+        transactionHash,
+      );
       const latestValue = await client.request({ method: "eth_blockNumber" });
       if (!/^0x(?:0|[1-9a-fA-F][0-9a-fA-F]*)$/.test(String(latestValue || ""))) {
         throw new Error("eth_blockNumber returned a non-canonical hex quantity");
       }
       const latestBlock = BigInt(latestValue);
+      if (latestBlock > MAX_SAFE_BLOCK_NUMBER) {
+        throw new Error("eth_blockNumber is outside the safe block-number range");
+      }
+      if (recoveryStartBlock > latestBlock) {
+        throw new Error("read-state activation block is ahead of the latest EVM block");
+      }
       logs = [];
       for (
-        let fromBlock = 0n;
+        let fromBlock = recoveryStartBlock;
         fromBlock <= latestBlock;
         fromBlock += MAX_LOG_QUERY_BLOCKS
       ) {
@@ -1537,6 +1624,92 @@ export function assertExactRecord(
   }
 }
 
+const EXACT_ABSENT_LOOKUP_MESSAGES = Object.freeze({
+  Asset: "[EXPECTED] Asset has not been mapped",
+  Request: "[EXPECTED] Unknown request_id",
+});
+
+function decodeHexReturnData(value) {
+  if (typeof value !== "string" || !/^(?:0x)?[0-9a-fA-F]+$/.test(value)) {
+    return null;
+  }
+  const normalized = value.startsWith("0x") ? value.slice(2) : value;
+  if (!normalized || normalized.length % 2 !== 0) return null;
+  return Uint8Array.from(Buffer.from(normalized, "hex"));
+}
+
+function decodeGoVmResultReturnData(value) {
+  if (typeof value !== "string") return null;
+  if ((value.match(/ReturnData:/g) || []).length !== 1) return null;
+  const match = value.match(
+    /^execution failed: &genvm\.VMResult\{Kind:0x1, ReturnData:\[\]uint8\{(0x[0-9a-f]{1,2}(?:, 0x[0-9a-f]{1,2})*)\}(?:, [\s\S]*)?\}$/,
+  );
+  if (!match) return null;
+  return Uint8Array.from(
+    match[1].split(", ").map((item) => Number.parseInt(item.slice(2), 16)),
+  );
+}
+
+function exactUserErrorEnvelope(bytes, expectedMessage) {
+  let decoded;
+  try {
+    decoded = genlayerAbi.calldata.decode(bytes);
+  } catch {
+    return false;
+  }
+  const expectedKeys = ["data", "events", "fingerprint", "kind", "storage_changes"];
+  if (
+    !(decoded instanceof Map) ||
+    decoded.size !== expectedKeys.length ||
+    expectedKeys.some((key) => !decoded.has(key)) ||
+    decoded.get("data") !== expectedMessage ||
+    decoded.get("kind") !== "UserError"
+  ) {
+    return false;
+  }
+  const events = decoded.get("events");
+  const storageChanges = decoded.get("storage_changes");
+  const fingerprint = decoded.get("fingerprint");
+  return (
+    Array.isArray(events) &&
+    events.length === 0 &&
+    Array.isArray(storageChanges) &&
+    storageChanges.length === 0 &&
+    fingerprint instanceof Map &&
+    fingerprint.size === 2 &&
+    fingerprint.has("frames") &&
+    fingerprint.has("module_instances") &&
+    Array.isArray(fingerprint.get("frames")) &&
+    fingerprint.get("module_instances") instanceof Map
+  );
+}
+
+export function isExactLookupAbsentError(error, label) {
+  const expectedMessage = EXACT_ABSENT_LOOKUP_MESSAGES[label];
+  if (!expectedMessage) return false;
+  const payloads = [];
+  const seen = new Set();
+  let current = error;
+  for (let depth = 0; depth < 8 && current && typeof current === "object"; depth += 1) {
+    if (seen.has(current)) return false;
+    seen.add(current);
+    if (current.code === -32000) {
+      if (current.data !== undefined && current.data !== null) {
+        const bytes = decodeHexReturnData(current.data);
+        if (!bytes) return false;
+        payloads.push(bytes);
+      }
+      const bytes = decodeGoVmResultReturnData(current.message);
+      if (bytes) payloads.push(bytes);
+    }
+    current = current.cause;
+  }
+  return (
+    payloads.length > 0 &&
+    payloads.every((bytes) => exactUserErrorEnvelope(bytes, expectedMessage))
+  );
+}
+
 async function assertLookupAbsent(
   client,
   address,
@@ -1545,25 +1718,21 @@ async function assertLookupAbsent(
   label,
 ) {
   for (const variant of ["latest-nonfinal", "latest-final"]) {
+    let existing;
     try {
-      const existing = await read(client, address, functionName, args, variant);
-      throw new Error(
-        `${label} already exists at ${variant}: ${jsonString(existing)}; ` +
-          "recover the original transaction instead of resubmitting",
-      );
+      existing = await read(client, address, functionName, args, variant);
     } catch (error) {
-      if (String(error).includes(`${label} already exists at`)) throw error;
-      const message = String(error).toLowerCase();
-      if (
-        !message.includes("unknown request_id") &&
-        !message.includes("asset has not been mapped") &&
-        !message.includes("does not exist")
-      ) {
+      if (!isExactLookupAbsentError(error, label)) {
         throw new Error(
           `${label} ${variant} absence check was inconclusive: ${String(error)}`,
         );
       }
+      continue;
     }
+    throw new Error(
+      `${label} already exists at ${variant}: ${jsonString(existing)}; ` +
+        "recover the original transaction instead of resubmitting",
+    );
   }
 }
 

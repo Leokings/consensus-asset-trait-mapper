@@ -130,8 +130,10 @@ immutable profile only. Resumed `ACCEPTED`, `READY_TO_FINALIZE`, and `FINALIZED`
 transactions are revalidated, and a successful external finalizer may be
 recovered only from one exact `TransactionFinalized` log whose EVM transaction,
 calldata, receipt, and event are all verified. Event recovery snapshots the
-latest EVM block and scans non-overlapping ranges of at most 10,000 blocks to
-stay within Bradbury RPC limits without losing duplicate-event detection.
+latest EVM block, verifies the exact SDK transaction identifier, anchors the
+scan 128 blocks before its canonical read-state activation block, and scans
+non-overlapping ranges of at most 10,000 blocks. A missing or malformed anchor
+fails closed; recovery never falls back to a genesis scan.
 
 ## Limitations
 

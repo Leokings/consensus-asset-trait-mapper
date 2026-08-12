@@ -5,14 +5,21 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { abi as genlayerAbi } from "genlayer-js";
-import { keccak256, stringToHex } from "viem";
+import {
+  InvalidInputRpcError,
+  RpcRequestError,
+  keccak256,
+  stringToHex,
+} from "viem";
 import {
   assertExactRecord,
   assertPolicyFixture,
   canonicalJson,
   computeMappingDigests,
   computePolicyDigest,
+  finalizationRecoveryStartBlock,
   finalizeWhenReady,
+  isExactLookupAbsentError,
   recoverFinalizationEvmTransaction,
   redactRpc,
   returnedMappingId,
@@ -102,6 +109,59 @@ function finalizationArtifacts(transactionHash, evmHash, consensusAddress) {
       logs: [log],
     },
   };
+}
+
+function recoveryLifecycleReceipt(transactionHash, activationBlock = "0") {
+  return {
+    ...positiveLifecycleReceipt("FINALIZED"),
+    txId: transactionHash,
+    readStateBlockRange: { activationBlock },
+  };
+}
+
+function userErrorEnvelope(message, overrides = {}) {
+  const fingerprint = new Map([
+    ["frames", [new Map([["func", 130n], ["module_name", "cpython"]])]],
+    [
+      "module_instances",
+      new Map([
+        ["cpython", new Map([["memories", [new Uint8Array(32)]]])],
+        ["softfloat", new Map([["memories", [new Uint8Array(32)]]])],
+      ]),
+    ],
+  ]);
+  return new Map([
+    ["data", overrides.data ?? message],
+    ["events", overrides.events ?? []],
+    ["fingerprint", overrides.fingerprint ?? fingerprint],
+    ["kind", overrides.kind ?? "UserError"],
+    ["storage_changes", overrides.storage_changes ?? []],
+    ...(overrides.extra ? [["extra", overrides.extra]] : []),
+  ]);
+}
+
+function goVmResultMessage(envelope, overrides = {}) {
+  const bytes = Buffer.from(genlayerAbi.calldata.encode(envelope));
+  const returnData = [...bytes]
+    .map((byte) => `0x${byte.toString(16)}`)
+    .join(", ");
+  return (
+    overrides.prefix ??
+    `execution failed: &genvm.VMResult{Kind:${overrides.kind ?? "0x1"}, ReturnData:[]uint8{${returnData}}, ` +
+      "Stdout:[]uint8(nil), Stderr:[]uint8(nil)}"
+  );
+}
+
+function actualViemLookupError(envelope, overrides = {}) {
+  const raw = new RpcRequestError({
+    body: { method: "sim_call", params: [] },
+    error: {
+      code: overrides.code ?? -32000,
+      message: goVmResultMessage(envelope, overrides),
+    },
+    url: "https://rpc.example",
+  });
+  return new InvalidInputRpcError(raw);
 }
 
 test("contract pins a production runner and live deployment stays below input budget", () => {
@@ -474,7 +534,7 @@ test("a finalized transaction safely recovers one successful external finalizer"
     evmHash,
     consensusAddress,
   );
-  const finalized = positiveLifecycleReceipt("FINALIZED");
+  const finalized = recoveryLifecycleReceipt(transactionHash);
   const client = {
     chain: { id: 4221, consensusMainContract: { address: consensusAddress } },
     getTransaction: async () => finalized,
@@ -518,12 +578,13 @@ test("external finalizer recovery scans ranges above 10,000 blocks without gaps"
   const ranges = [];
   const client = {
     chain: { consensusMainContract: { address: consensusAddress } },
+    getTransaction: async () => recoveryLifecycleReceipt(transactionHash, "10128"),
     request: async ({ method, params }) => {
-      if (method === "eth_blockNumber") return "0x4e20";
+      if (method === "eth_blockNumber") return "0x7530";
       if (method === "eth_getLogs") {
         const range = params[0];
         ranges.push([range.fromBlock, range.toBlock]);
-        return range.fromBlock === "0x4e20" ? [artifacts.log] : [];
+        return range.fromBlock === "0x7530" ? [artifacts.log] : [];
       }
       if (method === "eth_getTransactionByHash") return artifacts.transaction;
       if (method === "eth_getTransactionReceipt") return artifacts.receipt;
@@ -542,9 +603,9 @@ test("external finalizer recovery scans ranges above 10,000 blocks without gaps"
     evmHash,
   );
   assert.deepEqual(ranges, [
-    ["0x0", "0x270f"],
     ["0x2710", "0x4e1f"],
-    ["0x4e20", "0x4e20"],
+    ["0x4e20", "0x752f"],
+    ["0x7530", "0x7530"],
   ]);
   for (const [fromBlock, toBlock] of ranges) {
     assert.ok(BigInt(toBlock) - BigInt(fromBlock) + 1n <= 10_000n);
@@ -561,12 +622,13 @@ test("external finalizer recovery includes both sides of a 10,000-block boundary
     consensusAddress,
   );
 
-  for (const eventBlock of [9_999n, 10_000n]) {
+  for (const eventBlock of [19_999n, 20_000n]) {
     const ranges = [];
     const client = {
       chain: { consensusMainContract: { address: consensusAddress } },
+      getTransaction: async () => recoveryLifecycleReceipt(transactionHash, "10128"),
       request: async ({ method, params }) => {
-        if (method === "eth_blockNumber") return "0x2710";
+        if (method === "eth_blockNumber") return "0x4e20";
         if (method === "eth_getLogs") {
           const range = params[0];
           ranges.push([range.fromBlock, range.toBlock]);
@@ -592,8 +654,8 @@ test("external finalizer recovery includes both sides of a 10,000-block boundary
       evmHash,
     );
     assert.deepEqual(ranges, [
-      ["0x0", "0x270f"],
-      ["0x2710", "0x2710"],
+      ["0x2710", "0x4e1f"],
+      ["0x4e20", "0x4e20"],
     ]);
   }
 });
@@ -609,6 +671,7 @@ test("external finalizer recovery rejects duplicate and reverted event proofs", 
   );
   const duplicateClient = {
     chain: { consensusMainContract: { address: consensusAddress } },
+    getTransaction: async () => recoveryLifecycleReceipt(transactionHash, "0"),
     request: async ({ method }) => {
       if (method === "eth_blockNumber") return "0x2710";
       if (method === "eth_getLogs") return [artifacts.log];
@@ -628,6 +691,7 @@ test("external finalizer recovery rejects duplicate and reverted event proofs", 
 
   const revertedClient = {
     chain: { consensusMainContract: { address: consensusAddress } },
+    getTransaction: async () => recoveryLifecycleReceipt(transactionHash, "0"),
     request: async ({ method }) => {
       if (method === "eth_blockNumber") return "0x0";
       if (method === "eth_getLogs") return [artifacts.log];
@@ -647,6 +711,132 @@ test("external finalizer recovery rejects duplicate and reverted event proofs", 
       0,
     ),
     /reverted, or mismatched/,
+  );
+});
+
+test("external finalizer recovery derives a hash-bound activation window", () => {
+  const transactionHash = `0x${"1".repeat(64)}`;
+  assert.equal(
+    finalizationRecoveryStartBlock(
+      {
+        txId: transactionHash.toUpperCase().replace("0X", "0x"),
+        readStateBlockRange: { activationBlock: "17299211" },
+      },
+      transactionHash,
+    ),
+    17299083n,
+  );
+  assert.equal(
+    finalizationRecoveryStartBlock(
+      {
+        tx_id: transactionHash,
+        read_state_block_range: { activation_block: 64 },
+      },
+      transactionHash,
+    ),
+    0n,
+  );
+});
+
+test("external finalizer recovery rejects untrusted activation anchors", () => {
+  const transactionHash = `0x${"1".repeat(64)}`;
+  const valid = {
+    txId: transactionHash,
+    readStateBlockRange: { activationBlock: "17299211" },
+  };
+  for (const [transaction, expected] of [
+    [{ ...valid, txId: `0x${"2".repeat(64)}` }, /identifier mismatch/],
+    [{ readStateBlockRange: valid.readStateBlockRange }, /omitted its identifier/],
+    [{ txId: transactionHash }, /omitted read-state activation block/],
+    [
+      { ...valid, readStateBlockRange: { activationBlock: "017299211" } },
+      /not a canonical decimal block number/,
+    ],
+    [
+      {
+        ...valid,
+        readStateBlockRange: {
+          activationBlock: (BigInt(Number.MAX_SAFE_INTEGER) + 1n).toString(),
+        },
+      },
+      /outside the safe block-number range/,
+    ],
+    [
+      {
+        ...valid,
+        read_state_block_range: { activation_block: "17299212" },
+      },
+      /activation block aliases conflict/,
+    ],
+  ]) {
+    assert.throws(
+      () => finalizationRecoveryStartBlock(transaction, transactionHash),
+      expected,
+    );
+  }
+});
+
+test("lookup preflight accepts exact typed UserErrors through the actual viem wrapper", () => {
+  for (const [label, message] of [
+    ["Request", "[EXPECTED] Unknown request_id"],
+    ["Asset", "[EXPECTED] Asset has not been mapped"],
+  ]) {
+    assert.equal(
+      isExactLookupAbsentError(
+        actualViemLookupError(userErrorEnvelope(message)),
+        label,
+      ),
+      true,
+    );
+    const encoded = Buffer.from(
+      genlayerAbi.calldata.encode(userErrorEnvelope(message)),
+    ).toString("hex");
+    assert.equal(
+      isExactLookupAbsentError(
+        { cause: { code: -32000, message: "typed", data: `0x${encoded}` } },
+        label,
+      ),
+      true,
+    );
+  }
+});
+
+test("lookup preflight rejects wrapper text and malformed or adversarial ReturnData", () => {
+  const message = "[EXPECTED] Unknown request_id";
+  const exact = userErrorEnvelope(message);
+  const validMessage = goVmResultMessage(exact);
+  const wrongFingerprint = new Map([
+    ["frames", []],
+    ["module_instances", new Map()],
+    ["extra", 1n],
+  ]);
+  for (const candidate of [
+    new Error(message),
+    { code: -32000, message: `Missing or invalid parameters. Details: ${validMessage}` },
+    actualViemLookupError(exact, { code: "-32000" }),
+    actualViemLookupError(userErrorEnvelope(`${message}!`)),
+    actualViemLookupError(userErrorEnvelope(message, { kind: "Return" })),
+    actualViemLookupError(userErrorEnvelope(message, { events: [new Map()] })),
+    actualViemLookupError(
+      userErrorEnvelope(message, {
+        storage_changes: [[new Uint8Array([1]), new Uint8Array([2])]],
+      }),
+    ),
+    actualViemLookupError(userErrorEnvelope(message, { fingerprint: wrongFingerprint })),
+    actualViemLookupError(userErrorEnvelope(message, { extra: "decoy" })),
+    actualViemLookupError(exact, { kind: "0x0" }),
+    actualViemLookupError(exact, { prefix: `${validMessage} ReturnData:decoy` }),
+    { code: -32000, data: "not-hex", cause: actualViemLookupError(exact) },
+  ]) {
+    assert.equal(isExactLookupAbsentError(candidate, "Request"), false);
+  }
+  assert.equal(
+    isExactLookupAbsentError(actualViemLookupError(exact), "Asset"),
+    false,
+  );
+  assert.equal(
+    isExactLookupAbsentError(actualViemLookupError(exact), "UnknownLabel"),
+    false,
   );
 });
 

@@ -67,9 +67,15 @@ Finalization lifecycle state alone is not proof of which EVM call finalized a
 transaction. The harness accepts a recovered external finalizer only when one
 exact `TransactionFinalized(bytes32)` log identifies a successful EVM
 transaction whose target and calldata are the expected consensus-contract
-call. The log scan uses non-overlapping ranges of at most 10,000 EVM blocks and
-still requires global uniqueness across every scanned range. Duplicate,
-malformed, missing, or reverted evidence is rejected.
+call. Recovery verifies the SDK transaction identifier and begins 128 blocks
+before its canonical read-state activation block, then uses non-overlapping
+ranges of at most 10,000 EVM blocks. It requires uniqueness across every
+scanned range and never falls back to block zero when the anchor is missing.
+Duplicate, malformed, missing, or reverted evidence is rejected.
+
+Before any semantic write, both request and asset lookups must fail with their
+exact ABI-decoded GenVM `UserError` envelopes. Generic RPC wrapper text and
+untyped substring matches never establish absence.
 
 ## Consumer checklist
 
