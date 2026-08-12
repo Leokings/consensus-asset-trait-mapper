@@ -35,7 +35,7 @@ the code block and excluding the code-fence markers.
    `https://github.com/Leokings/consensus-asset-trait-mapper/blob/9704da33003b74755315ab1d05e5f2cf8ac90501/contracts/ConsensusAssetAdmissionTraitMapper.py`
 
 4. **GitHub File - deployment and timeout audit**
-   `PROOF_AUDIT_COMMIT_PINNED_URL`
+   `https://github.com/Leokings/consensus-asset-trait-mapper/blob/41725415f0d20769b58cc5bf74fef4a8fb4759b2/deployments/bradbury-2026-08-12-v2.0.2-timeout-audit.json`
 
 **Contribution date**
 
@@ -49,6 +49,5 @@ the code block and excluding the code-fence markers.
 Intelligent Contracts
 ```
 
-Before submission, replace the proof-audit URL after its commit, make private
-evidence accessible to reviewers, preserve the semantic-timeout disclosure, and
-complete the CAPTCHA manually.
+Before submission, make private evidence accessible to reviewers, preserve the
+semantic-timeout disclosure, and complete the CAPTCHA manually.
