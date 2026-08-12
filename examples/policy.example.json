@@ -1,0 +1,47 @@
+{
+  "admission_rules": "Admit wearable fantasy armor; reject weapons and unrelated objects.",
+  "class_power_caps": {
+    "HEAVY_ARMOR": 2,
+    "LIGHT_ARMOR": 3,
+    "ROBE": 2
+  },
+  "collection_sources": [
+    {
+      "collection_id": "demo:forge",
+      "image_domain": "raw.githubusercontent.com",
+      "image_path_prefix": "/OWNER/REPOSITORY/COMMIT/examples/",
+      "metadata_domain": "raw.githubusercontent.com",
+      "metadata_path_prefix": "/OWNER/REPOSITORY/COMMIT/examples/"
+    }
+  ],
+  "max_power_tier": 3,
+  "max_rarity_tier": 5,
+  "policy_id": "DEMO-ARMOR-ADMISSION",
+  "policy_version": "2",
+  "trait_profiles": [
+    {
+      "class_id": "HEAVY_ARMOR",
+      "description": "Visibly heavy wearable armor with a dominant fire element and fortified construction.",
+      "element_id": "FIRE",
+      "power_tier": 2,
+      "profile_id": "HEAVY_FIRE_R3_P2",
+      "rarity_tier": 3
+    },
+    {
+      "class_id": "LIGHT_ARMOR",
+      "description": "Visibly light wearable armor with no supported elemental characteristic.",
+      "element_id": "NONE",
+      "power_tier": 1,
+      "profile_id": "LIGHT_NONE_R2_P1",
+      "rarity_tier": 2
+    },
+    {
+      "class_id": "ROBE",
+      "description": "A wearable robe with a dominant water element and reinforced magical construction.",
+      "element_id": "WATER",
+      "power_tier": 2,
+      "profile_id": "ROBE_WATER_R3_P2",
+      "rarity_tier": 3
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "admission_rules": "Admit a clearly visible standalone software-language emblem as a cosmetic game badge; reject unrelated, unreadable, or multi-object images.",
+  "class_power_caps": {
+    "COSMETIC_EMBLEM": 1
+  },
+  "collection_sources": [
+    {
+      "collection_id": "demo:public-emblems",
+      "image_domain": "raw.githubusercontent.com",
+      "image_path_prefix": "/github/explore/cf281c705f963b71a359a2afb0adeb922bc0b369/topics/python/",
+      "metadata_domain": "gist.githubusercontent.com",
+      "metadata_path_prefix": "/Leokings/b61f3173ee0c04183e35682f353d2605/raw/289239399f6941b2c11f7ba5b4c045018fe7f733/"
+    }
+  ],
+  "max_power_tier": 1,
+  "max_rarity_tier": 1,
+  "policy_id": "PUBLIC-EMBLEM-ADMISSION",
+  "policy_version": "2",
+  "trait_profiles": [
+    {
+      "class_id": "COSMETIC_EMBLEM",
+      "description": "A clearly visible standalone software-language emblem suitable only as a cosmetic badge.",
+      "element_id": "NONE",
+      "power_tier": 1,
+      "profile_id": "COSMETIC_EMBLEM_NONE_R1_P1",
+      "rarity_tier": 1
+    }
+  ]
+}

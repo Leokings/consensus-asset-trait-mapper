@@ -1,0 +1,13 @@
+{
+  "attributes": [
+    {
+      "trait_type": "asset_type",
+      "value": "software_language_emblem"
+    }
+  ],
+  "collection_id": "demo:public-emblems",
+  "description": "The Python programming-language emblem used as a neutral cosmetic game badge.",
+  "image": "https://raw.githubusercontent.com/github/explore/cf281c705f963b71a359a2afb0adeb922bc0b369/topics/python/python.png",
+  "name": "Python Emblem",
+  "token_reference": "python-emblem-1"
+}

@@ -1,0 +1,13 @@
+{
+  "attributes": [
+    {
+      "trait_type": "element",
+      "value": "fire"
+    }
+  ],
+  "collection_id": "demo:forge",
+  "description": "Heavy armor forged with a visible fire core.",
+  "image": "https://raw.githubusercontent.com/OWNER/REPOSITORY/COMMIT/examples/asset.example.png",
+  "name": "Ember Bastion",
+  "token_reference": "1"
+}

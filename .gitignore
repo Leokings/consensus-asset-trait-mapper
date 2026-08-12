@@ -1,0 +1,10 @@
+__pycache__/
+.pytest_cache/
+.gltest_cache/
+artifacts/
+*.log
+.env
+.env.*
+!.env.example
+deployments/*.local.json
+
