@@ -174,7 +174,7 @@ def test_constructor_canonicalizes_exact_sources_and_profiles(direct_vm, direct_
     stored = mapper.get_policy()
     policy = json.loads(stored["policy_json"])
 
-    assert stored["contract_version"] == "2.0.0"
+    assert stored["contract_version"] == "2.0.1"
     assert stored["policy_schema"] == "CONSENSUS_ASSET_ADMISSION_TRAIT_MAPPING_V2"
     assert policy["collection_sources"][0]["metadata_path_prefix"] == "/official/demo-forge/"
     assert [item["profile_id"] for item in policy["trait_profiles"]] == [
@@ -191,7 +191,7 @@ def test_repository_example_policies_deploy(direct_vm, direct_deploy, policy_pat
     mapper = deploy_mapper(direct_vm, direct_deploy, policy_json=policy_json)
 
     stored = mapper.get_policy()
-    assert stored["contract_version"] == "2.0.0"
+    assert stored["contract_version"] == "2.0.1"
     assert json.loads(stored["policy_json"])["collection_sources"]
     assert json.loads(stored["policy_json"])["trait_profiles"]
 
@@ -270,6 +270,70 @@ def test_mapped_profile_deterministically_derives_all_traits_and_digests(
     assert len(record["request_digest"]) == 64
     assert len(record["result_digest"]) == 64
     assert mapper.get_mapping_by_request(direct_alice, "REQ-1") == record
+
+
+def test_request_lookup_accepts_genvm_string_address_argument(
+    direct_vm, direct_deploy, direct_alice
+):
+    mapper = deploy_mapper(direct_vm, direct_deploy)
+    direct_vm.sender = direct_alice
+    metadata_body, image_body = mock_sources(direct_vm)
+    mock_mapping(direct_vm)
+
+    mapping_id = submit(mapper, metadata_body, image_body, request_id="STRING-ADDRESS")
+    record = mapper.get_mapping(mapping_id)
+
+    assert isinstance(record["submitter"], str)
+    assert mapper.get_mapping_by_request(record["submitter"], "STRING-ADDRESS") == record
+
+
+def test_request_lookup_normalizes_mixed_case_string_address(
+    direct_vm, direct_deploy, direct_alice
+):
+    mapper = deploy_mapper(direct_vm, direct_deploy)
+    direct_vm.sender = direct_alice
+    metadata_body, image_body = mock_sources(direct_vm)
+    mock_mapping(direct_vm)
+    mapping_id = submit(mapper, metadata_body, image_body, request_id="MIXED-CASE")
+    record = mapper.get_mapping(mapping_id)
+    body = record["submitter"][2:]
+    mixed_case = "0x" + "".join(
+        character.upper() if index % 2 else character
+        for index, character in enumerate(body)
+    )
+
+    assert mapper.get_mapping_by_request(mixed_case, "MIXED-CASE") == record
+
+
+@pytest.mark.parametrize(
+    "invalid_address",
+    [
+        "",
+        "1" * 40,
+        "0X" + "1" * 40,
+        "0x" + "1" * 39,
+        "0x" + "1" * 41,
+        " 0x" + "1" * 40,
+        "0x" + "1" * 40 + " ",
+        "0x" + "g" * 40,
+        "MTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTE=",
+    ],
+)
+def test_request_lookup_rejects_malformed_string_address(
+    direct_vm, direct_deploy, invalid_address
+):
+    mapper = deploy_mapper(direct_vm, direct_deploy)
+    with direct_vm.expect_revert("address"):
+        mapper.get_mapping_by_request(invalid_address, "MISSING")
+
+
+@pytest.mark.parametrize("invalid_address", [b"\x01" * 19, b"\x01" * 21])
+def test_request_lookup_rejects_wrong_length_address_bytes(
+    direct_vm, direct_deploy, invalid_address
+):
+    mapper = deploy_mapper(direct_vm, direct_deploy)
+    with direct_vm.expect_revert("exactly 20 bytes"):
+        mapper.get_mapping_by_request(invalid_address, "MISSING")
 
 
 def test_unknown_profile_is_rejected(direct_vm, direct_deploy):

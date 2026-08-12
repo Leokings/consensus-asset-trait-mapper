@@ -25,7 +25,7 @@ const NETWORK = {
   name: "Genlayer Bradbury Testnet",
   rpc: "https://rpc-bradbury.genlayer.com",
 };
-const CONTRACT_VERSION = "2.0.0";
+const CONTRACT_VERSION = "2.0.1";
 const POLICY_SCHEMA = "CONSENSUS_ASSET_ADMISSION_TRAIT_MAPPING_V2";
 const DIGEST_DOMAIN = "GENLAYER_CONSENSUS_ASSET_ADMISSION_TRAIT_MAPPER";
 const RUNNER = "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6";
@@ -34,6 +34,7 @@ const FINALIZE_TRANSACTION_SELECTOR = "0xb2efda83";
 const TRANSACTION_FINALIZED_EVENT_TOPIC = keccak256(
   stringToHex("TransactionFinalized(bytes32)"),
 ).toLowerCase();
+const MAX_LOG_QUERY_BLOCKS = 10_000n;
 const MAX_DEPLOYMENT_INPUT_BYTES = 50_000;
 const EXPECTED_GENVM_CHAIN_ID = 1;
 const LIVE_POLICY_SHA256 =
@@ -1062,20 +1063,45 @@ export async function recoverFinalizationEvmTransaction(
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     let logs;
     try {
-      logs = await client.request({
-        method: "eth_getLogs",
-        params: [
-          {
-            address: consensusAddress,
-            fromBlock: "0x0",
-            toBlock: "latest",
-            topics: [
-              TRANSACTION_FINALIZED_EVENT_TOPIC,
-              transactionHash.toLowerCase(),
-            ],
-          },
-        ],
-      });
+      const latestValue = await client.request({ method: "eth_blockNumber" });
+      if (!/^0x(?:0|[1-9a-fA-F][0-9a-fA-F]*)$/.test(String(latestValue || ""))) {
+        throw new Error("eth_blockNumber returned a non-canonical hex quantity");
+      }
+      const latestBlock = BigInt(latestValue);
+      logs = [];
+      for (
+        let fromBlock = 0n;
+        fromBlock <= latestBlock;
+        fromBlock += MAX_LOG_QUERY_BLOCKS
+      ) {
+        const toBlock =
+          fromBlock + MAX_LOG_QUERY_BLOCKS - 1n < latestBlock
+            ? fromBlock + MAX_LOG_QUERY_BLOCKS - 1n
+            : latestBlock;
+        const chunk = await client.request({
+          method: "eth_getLogs",
+          params: [
+            {
+              address: consensusAddress,
+              fromBlock: `0x${fromBlock.toString(16)}`,
+              toBlock: `0x${toBlock.toString(16)}`,
+              topics: [
+                TRANSACTION_FINALIZED_EVENT_TOPIC,
+                transactionHash.toLowerCase(),
+              ],
+            },
+          ],
+        });
+        if (!Array.isArray(chunk)) {
+          throw new Error(
+            `${label} TransactionFinalized log chunk query was not an array`,
+          );
+        }
+        logs.push(...chunk);
+        if (logs.length > 1) {
+          break;
+        }
+      }
     } catch (error) {
       if (attempt === attempts) {
         throw new Error(
@@ -1086,9 +1112,6 @@ export async function recoverFinalizationEvmTransaction(
         await new Promise((resolve) => setTimeout(resolve, intervalMs));
       }
       continue;
-    }
-    if (!Array.isArray(logs)) {
-      throw new Error(`${label} TransactionFinalized log query was not an array`);
     }
     if (logs.length > 1) {
       throw new Error(

@@ -11,9 +11,11 @@ Consensus Asset Admission & Trait Mapper — Reusable Intelligent Contract
 **Notes / Description**
 
 ```text
-Built an MIT-licensed Consensus Asset Admission & Trait Mapper, a reusable GenLayer Intelligent Contract for games. A caller submits public metadata and an asset image with SHA-256 commitments. Each collection is immutably bound to exact metadata and image host/path prefixes. Results are MAPPED, AMBIGUOUS, INELIGIBLE_COLLECTION, UNSUPPORTED_ASSET, METADATA_CONFLICT, SOURCE_UNAVAILABLE, INTEGRITY_FAILURE, INVALID_SOURCE_FORMAT, or CONTENT_LIMIT.
+Built an MIT-licensed Consensus Asset Admission & Trait Mapper, a reusable GenLayer Intelligent Contract. Apps submit public metadata/image URLs with SHA-256 commitments. An immutable policy binds each collection to exact source hosts/paths and closed trait profiles.
 
-This uses real vision consensus, not a backend classifier. The leader fetches the committed bytes and selects only one closed trait profile. Validators independently re-fetch the evidence and audit the exact proposal. Deterministic code derives class, element, rarity, and power from the profile, enforces caps, sender-scopes requests, and reserves an asset only after MAPPED. Includes prompt-injection defenses, strict JSON/source limits, 57 direct tests, finality-enforcing integration/deployment tooling, documentation, and MIT reuse rights.
+This uses real GenLayer vision consensus. The leader fetches and verifies both sources, then selects one allowed profile. Validators re-fetch digest-pinned evidence and audit it. Deterministic code derives class, element, rarity and power, enforces caps, sender-scopes requests, and reserves an asset only after MAPPED.
+
+Includes strict JSON/source limits, prompt-injection defenses, deployment-bound digests, 70 direct tests, 4 Python tooling tests and 14 JavaScript proof tests. Exact MAPPED tests finalize on StudioNet and Bradbury. The Bradbury proof records source/policy provenance, EVM finalization proofs, votes and latest-final state. Builders can copy and configure it.
 ```
 
 **Evidence entries**

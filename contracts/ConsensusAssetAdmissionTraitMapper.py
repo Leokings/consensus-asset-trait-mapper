@@ -10,7 +10,7 @@ import hashlib
 import json
 
 
-CONTRACT_VERSION = "2.0.0"
+CONTRACT_VERSION = "2.0.1"
 POLICY_SCHEMA = "CONSENSUS_ASSET_ADMISSION_TRAIT_MAPPING_V2"
 DIGEST_DOMAIN = "GENLAYER_CONSENSUS_ASSET_ADMISSION_TRAIT_MAPPER"
 
@@ -787,10 +787,25 @@ def _record_dict(record: AssetMapping) -> dict:
     }
 
 
-def _address_text(value: Address) -> str:
+def _address_text(value) -> str:
     if isinstance(value, bytes):
+        if len(value) != 20:
+            raise gl.vm.UserError(f"{ERROR_EXPECTED} address must contain exactly 20 bytes")
         value = Address(value)
-    return value.as_hex.lower()
+    if isinstance(value, str):
+        text = value
+    elif isinstance(value, Address):
+        text = value.as_hex
+    else:
+        raise gl.vm.UserError(f"{ERROR_EXPECTED} address must be a hexadecimal account address")
+    if (
+        not isinstance(text, str)
+        or len(text) != 42
+        or text[:2] != "0x"
+        or any(character not in "0123456789abcdefABCDEF" for character in text[2:])
+    ):
+        raise gl.vm.UserError(f"{ERROR_EXPECTED} address must be a canonical 20-byte hexadecimal account address")
+    return text.lower()
 
 
 def _digest(tag: str, parts: list[str]) -> str:

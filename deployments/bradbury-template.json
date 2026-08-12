@@ -14,7 +14,7 @@
     "commit": "FULL_40_CHARACTER_COMMIT",
     "sha256": "CONTRACT_SOURCE_SHA256",
     "runner": "PINNED_RUNNER",
-    "contract_version": "2.0.0",
+    "contract_version": "2.0.1",
     "policy_schema": "CONSENSUS_ASSET_ADMISSION_TRAIT_MAPPING_V2",
     "commit_git_objects_verified": [
       "contracts/ConsensusAssetAdmissionTraitMapper.py",

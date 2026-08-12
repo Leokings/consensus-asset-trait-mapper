@@ -67,6 +67,9 @@ map_asset(request_id, collection_id, token_reference,
 ```
 
 Request IDs are sender scoped. Request and result digests bind the sender, chain ID, contract address, immutable policy, and material inputs. The asset digest omits the sender deliberately: it binds chain, deployment, policy, collection, and token so one successful mapping is globally reusable and cannot be outcome-ground across addresses.
+The `submitter` argument remains an ABI `address`; the contract normalizes both
+runtime `Address` objects and GenVM's canonical hexadecimal call representation
+before deriving the request key.
 
 ## Local verification
 
@@ -81,8 +84,8 @@ npm run check:deploy
 npm run test:tooling
 ```
 
-Current suite: **57 direct tests**, **4 Python proof-harness tests**, and
-**12 JavaScript Bradbury-harness tests**. Coverage includes validator-hook audit
+Current suite: **70 direct tests**, **4 Python proof-harness tests**, and
+**14 JavaScript Bradbury-harness tests**. Coverage includes validator-hook audit
 acceptance/rejection, malformed audits, changed evidence, terminal-result
 equivalence, transient-error parity, deployable repository fixtures,
 digest-pinned `text/plain` JSON metadata, transaction-return provenance,
@@ -126,7 +129,9 @@ committed bytes of `examples/live-policy.json`: one Emberguard source and one
 immutable profile only. Resumed `ACCEPTED`, `READY_TO_FINALIZE`, and `FINALIZED`
 transactions are revalidated, and a successful external finalizer may be
 recovered only from one exact `TransactionFinalized` log whose EVM transaction,
-calldata, receipt, and event are all verified.
+calldata, receipt, and event are all verified. Event recovery snapshots the
+latest EVM block and scans non-overlapping ranges of at most 10,000 blocks to
+stay within Bradbury RPC limits without losing duplicate-event detection.
 
 ## Limitations
 

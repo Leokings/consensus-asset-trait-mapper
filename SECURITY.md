@@ -67,7 +67,9 @@ Finalization lifecycle state alone is not proof of which EVM call finalized a
 transaction. The harness accepts a recovered external finalizer only when one
 exact `TransactionFinalized(bytes32)` log identifies a successful EVM
 transaction whose target and calldata are the expected consensus-contract
-call. Duplicate, malformed, missing, or reverted evidence is rejected.
+call. The log scan uses non-overlapping ranges of at most 10,000 EVM blocks and
+still requires global uniqueness across every scanned range. Duplicate,
+malformed, missing, or reverted evidence is rejected.
 
 ## Consumer checklist
 

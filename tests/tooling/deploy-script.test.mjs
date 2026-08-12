@@ -479,6 +479,7 @@ test("a finalized transaction safely recovers one successful external finalizer"
     chain: { id: 4221, consensusMainContract: { address: consensusAddress } },
     getTransaction: async () => finalized,
     request: async ({ method }) => {
+      if (method === "eth_blockNumber") return "0x0";
       if (method === "eth_getLogs") return [artifacts.log];
       if (method === "eth_getTransactionByHash") return artifacts.transaction;
       if (method === "eth_getTransactionReceipt") return artifacts.receipt;
@@ -505,6 +506,98 @@ test("a finalized transaction safely recovers one successful external finalizer"
   }
 });
 
+test("external finalizer recovery scans ranges above 10,000 blocks without gaps", async () => {
+  const transactionHash = `0x${"1".repeat(64)}`;
+  const evmHash = `0x${"2".repeat(64)}`;
+  const consensusAddress = `0x${"3".repeat(40)}`;
+  const artifacts = finalizationArtifacts(
+    transactionHash,
+    evmHash,
+    consensusAddress,
+  );
+  const ranges = [];
+  const client = {
+    chain: { consensusMainContract: { address: consensusAddress } },
+    request: async ({ method, params }) => {
+      if (method === "eth_blockNumber") return "0x4e20";
+      if (method === "eth_getLogs") {
+        const range = params[0];
+        ranges.push([range.fromBlock, range.toBlock]);
+        return range.fromBlock === "0x4e20" ? [artifacts.log] : [];
+      }
+      if (method === "eth_getTransactionByHash") return artifacts.transaction;
+      if (method === "eth_getTransactionReceipt") return artifacts.receipt;
+      throw new Error(`Unexpected method ${method}`);
+    },
+  };
+
+  assert.equal(
+    await recoverFinalizationEvmTransaction(
+      client,
+      transactionHash,
+      "Chunked",
+      1,
+      0,
+    ),
+    evmHash,
+  );
+  assert.deepEqual(ranges, [
+    ["0x0", "0x270f"],
+    ["0x2710", "0x4e1f"],
+    ["0x4e20", "0x4e20"],
+  ]);
+  for (const [fromBlock, toBlock] of ranges) {
+    assert.ok(BigInt(toBlock) - BigInt(fromBlock) + 1n <= 10_000n);
+  }
+});
+
+test("external finalizer recovery includes both sides of a 10,000-block boundary", async () => {
+  const transactionHash = `0x${"1".repeat(64)}`;
+  const evmHash = `0x${"2".repeat(64)}`;
+  const consensusAddress = `0x${"3".repeat(40)}`;
+  const artifacts = finalizationArtifacts(
+    transactionHash,
+    evmHash,
+    consensusAddress,
+  );
+
+  for (const eventBlock of [9_999n, 10_000n]) {
+    const ranges = [];
+    const client = {
+      chain: { consensusMainContract: { address: consensusAddress } },
+      request: async ({ method, params }) => {
+        if (method === "eth_blockNumber") return "0x2710";
+        if (method === "eth_getLogs") {
+          const range = params[0];
+          ranges.push([range.fromBlock, range.toBlock]);
+          return BigInt(range.fromBlock) <= eventBlock &&
+            eventBlock <= BigInt(range.toBlock)
+            ? [artifacts.log]
+            : [];
+        }
+        if (method === "eth_getTransactionByHash") return artifacts.transaction;
+        if (method === "eth_getTransactionReceipt") return artifacts.receipt;
+        throw new Error(`Unexpected method ${method}`);
+      },
+    };
+
+    assert.equal(
+      await recoverFinalizationEvmTransaction(
+        client,
+        transactionHash,
+        `Boundary ${eventBlock}`,
+        1,
+        0,
+      ),
+      evmHash,
+    );
+    assert.deepEqual(ranges, [
+      ["0x0", "0x270f"],
+      ["0x2710", "0x2710"],
+    ]);
+  }
+});
+
 test("external finalizer recovery rejects duplicate and reverted event proofs", async () => {
   const transactionHash = `0x${"1".repeat(64)}`;
   const evmHash = `0x${"2".repeat(64)}`;
@@ -517,7 +610,8 @@ test("external finalizer recovery rejects duplicate and reverted event proofs", 
   const duplicateClient = {
     chain: { consensusMainContract: { address: consensusAddress } },
     request: async ({ method }) => {
-      if (method === "eth_getLogs") return [artifacts.log, { ...artifacts.log }];
+      if (method === "eth_blockNumber") return "0x2710";
+      if (method === "eth_getLogs") return [artifacts.log];
       throw new Error(`Unexpected method ${method}`);
     },
   };
@@ -535,6 +629,7 @@ test("external finalizer recovery rejects duplicate and reverted event proofs", 
   const revertedClient = {
     chain: { consensusMainContract: { address: consensusAddress } },
     request: async ({ method }) => {
+      if (method === "eth_blockNumber") return "0x0";
       if (method === "eth_getLogs") return [artifacts.log];
       if (method === "eth_getTransactionByHash") return artifacts.transaction;
       if (method === "eth_getTransactionReceipt") {
