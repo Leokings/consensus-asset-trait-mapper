@@ -35,7 +35,17 @@ the code block and excluding the code-fence markers.
    `https://github.com/Leokings/consensus-asset-trait-mapper/blob/9704da33003b74755315ab1d05e5f2cf8ac90501/contracts/ConsensusAssetAdmissionTraitMapper.py`
 
 4. **GitHub File - deployment and timeout audit**
-   `https://github.com/Leokings/consensus-asset-trait-mapper/blob/41725415f0d20769b58cc5bf74fef4a8fb4759b2/deployments/bradbury-2026-08-12-v2.0.2-timeout-audit.json`
+   `https://github.com/Leokings/consensus-asset-trait-mapper/blob/81b71f902c862e13679cf7757d7bb988a54ede21/deployments/bradbury-2026-08-12-v2.0.2-timeout-audit.json`
+
+**Reviewer audit note**
+
+The audit explicitly labels its diagnosis as an inference, not a proven cause.
+The most likely explanation is inconsistent Bradbury validator vision-provider
+availability, image-capability routing, or latency. Full validator logs are not
+available, so Raw GitHub fetch/rate-limit failures, model/schema variance,
+provider overload, validator capacity, and runtime faults remain plausible.
+The audit links the relevant official GenLayer image-processing, LLM runtime,
+GenVM, and validator-configuration documentation.
 
 **Contribution date**
 
