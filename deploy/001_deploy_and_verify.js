@@ -430,9 +430,13 @@ function verifySourceCommit(
     );
     committedHarness = execFileSync(
       "git",
-      ["show", `${sourceCommit}:deploy/001_deploy_and_verify.js`],
+      ["show", `${head}:deploy/001_deploy_and_verify.js`],
       { cwd: process.cwd(), maxBuffer: 2_000_000 },
     );
+    execFileSync("git", ["merge-base", "--is-ancestor", sourceCommit, head], {
+      cwd: process.cwd(),
+      stdio: "ignore",
+    });
     dirty = execFileSync(
       "git",
       ["status", "--porcelain", "--untracked-files=no"],
@@ -440,11 +444,6 @@ function verifySourceCommit(
     ).trim();
   } catch (error) {
     throw new Error(`Unable to verify the release source commit: ${String(error)}`);
-  }
-  if (head !== sourceCommit) {
-    throw new Error(
-      `ASSET_MAPPER_SOURCE_COMMIT ${sourceCommit} is not checked-out HEAD ${head}`,
-    );
   }
   if (!committedSource.equals(Buffer.from(code, "utf8"))) {
     throw new Error("Contract source differs from the source_commit Git object");
@@ -456,7 +455,7 @@ function verifySourceCommit(
   }
   if (!committedHarness.equals(harnessBytes)) {
     throw new Error(
-      "Bradbury proof harness differs from the source_commit Git object",
+      "Bradbury proof harness differs from the checked-out proof-harness commit",
     );
   }
   if (dirty) {
@@ -464,6 +463,7 @@ function verifySourceCommit(
       `Tracked working tree is dirty; commit the release before deployment: ${dirty}`,
     );
   }
+  return head;
 }
 
 function parseJson(name, value) {
@@ -718,6 +718,7 @@ function checkpointBase({
   fixtureProof,
   livePolicyBytes,
   harnessBytes,
+  proofHarnessCommit,
 }) {
   const sourceSha256 = sha256(Buffer.from(code, "utf8"));
   const canonicalPolicyJson = JSON.stringify(canonicalJson(policy));
@@ -743,8 +744,9 @@ function checkpointBase({
       commit_git_objects_verified: [
         "contracts/ConsensusAssetAdmissionTraitMapper.py",
         "examples/live-policy.json",
-        "deploy/001_deploy_and_verify.js",
       ],
+      proof_harness_commit: proofHarnessCommit,
+      proof_harness_git_object_verified: "deploy/001_deploy_and_verify.js",
       harness_sha256: sha256(harnessBytes),
     },
     constructor: {
@@ -1990,7 +1992,7 @@ export default async function deployAndVerify(client) {
   if (sha256(livePolicyBytes) !== LIVE_POLICY_SHA256) {
     throw new Error("Local examples/live-policy.json bytes do not match the pinned release SHA-256");
   }
-  verifySourceCommit(
+  const proofHarnessCommit = verifySourceCommit(
     sourceCommit,
     code,
     livePolicyBytes,
@@ -2030,8 +2032,13 @@ export default async function deployAndVerify(client) {
       fixtureProof,
       livePolicyBytes,
       harnessBytes,
+      proofHarnessCommit,
     }),
   );
+  checkpoint.source.proof_harness_commit = proofHarnessCommit;
+  checkpoint.source.proof_harness_git_object_verified =
+    "deploy/001_deploy_and_verify.js";
+  checkpoint.source.harness_sha256 = sha256(harnessBytes);
   checkpoint.deployment_input_bytes = deploymentInputBytes;
   checkpoint.fixture_http_proof = fixtureProof;
   saveCheckpoint(outputPath, checkpoint);
