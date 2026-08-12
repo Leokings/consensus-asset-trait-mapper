@@ -17,6 +17,32 @@
     "explorer_api_url": "https://explorer-bradbury.genlayer.com/api/v1/transactions/0x8b9505cbff65788371fe54e79855b35d52e4dd45768d38eb8c376cc56915b0db",
     "release_harness_genlayer_js_version": "1.1.8"
   },
+  "timeout_diagnosis": {
+    "classification": "INFERENCE_NOT_PROVEN_CAUSE",
+    "most_likely_cause": "Inconsistent Bradbury validator vision-provider availability, image-capability routing, or provider latency during the semantic transaction.",
+    "confidence_scope": "This is the most likely explanation supported by the available public evidence, not a confirmed root cause or an attribution to any individual validator, provider, GenVM component, or contract path.",
+    "why_not_confirmed": "Full per-validator GenVM, web-module, model-provider, routing, and timing logs are not available in this audit evidence. Transaction status, votes, hashes, and public Explorer/API fields do not identify which internal step timed out.",
+    "evidence_basis": [
+      "The official SDK transaction view reports execution FINISHED_WITH_RETURN and the captured execution evidence contains a bounded MAPPED candidate, but that candidate was not accepted or finalized.",
+      "The terminal SDK vote representation contains one DETERMINISTIC_VIOLATION and four TIMEOUT votes; the Explorer represents the same positions as one NONDET_DISAGREE and four TIMEOUT votes.",
+      "Post-terminal latest-final and latest-nonfinal reads both show mapping_count 0, no request record, and no asset record.",
+      "The semantic input used a digest-pinned, strict PNG of 58,501 encoded bytes, below the contract's 65,536-byte PNG ceiling, after deterministic PNG structure and decoded-work validation.",
+      "GenLayer's official image-processing documentation explicitly supports raw image bytes through gl.nondet.exec_prompt(images=[...]), while the validator configuration documentation states that image prompts require correctly routed vision-capable models and may fail when no eligible provider is available or providers are exhausted."
+    ],
+    "plausible_alternatives_not_excluded": [
+      "One or more validators may have encountered Raw GitHub fetch latency, unavailability, throttling, or rate limits while retrieving the pinned metadata or image.",
+      "Different vision models may have produced a materially different classification, an audit rejection, or output that did not satisfy the required JSON schema.",
+      "A transient provider overload, validator-local capacity limit, network fault, or GenVM/web-module runtime edge case may have exhausted the transaction's execution window.",
+      "The single non-timeout disagreement may reflect a substantive model judgment, schema/runtime validation, or another deterministic check; the public evidence cannot distinguish among them."
+    ],
+    "official_references": {
+      "image_processing_api": "https://docs.genlayer.com/developers/intelligent-contracts/features/image-processing",
+      "llm_runtime_api": "https://docs.genlayer.com/developers/intelligent-contracts/features/calling-llms",
+      "genvm_runtime": "https://docs.genlayer.com/understand-genlayer-protocol/core-concepts/genvm",
+      "validator_genvm_configuration": "https://docs.genlayer.com/validators/genvm-configuration"
+    },
+    "reviewer_conclusion": "The evidence supports a Bradbury vision-path liveness or consensus failure for this transaction. It does not prove that GenLayer lacks image support, that the contract's image API is invalid, or that validator vision routing was the definitive cause."
+  },
   "terminal_evidence": {
     "retrieved_at": "2026-08-12T17:39:42.454Z",
     "canonicalization": "Recursively sort object keys, preserve array order, then SHA-256 the compact UTF-8 JSON subset.",

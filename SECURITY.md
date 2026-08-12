@@ -103,6 +103,16 @@ audit embeds canonical SHA-256-committed terminal subsets from genlayer-js 1.1.8
 with retrieval time and source URLs. Do not cite the checkpoint alone as terminal
 timeout evidence.
 
+The concise audit's `timeout_diagnosis` is deliberately marked
+`INFERENCE_NOT_PROVEN_CAUSE`. Inconsistent Bradbury validator vision-provider
+availability, image-capability routing, or latency is the most likely
+explanation, but the public transaction and vote records cannot prove it without
+full per-validator GenVM, provider, web-module, routing, and timing logs. Raw
+GitHub fetch failures/rate limits, model or JSON-schema variance, transient
+provider overload, validator-local capacity, and runtime edge cases remain
+plausible. Treat the diagnosis as reviewer context, never as a security finding
+or a definitive attribution.
+
 ## Consumer checklist
 
 - Wait for `FINALIZED` and verify execution succeeded.

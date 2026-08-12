@@ -137,6 +137,18 @@ remains beside it, but is explicitly pre-terminal `IN_PROGRESS` evidence and
 does not contain the eventual timeout rounds. This repository claims a finalized
 Bradbury deployment, not a finalized Bradbury semantic mapping.
 
+The audit labels its root-cause diagnosis as an **inference, not a proven
+cause**. The most likely explanation is inconsistent Bradbury validator
+vision-provider availability, image-capability routing, or latency. That is
+consistent with four timeout votes, a returned-but-unaccepted candidate, and
+GenLayer's documented requirement that validators route image requests to
+vision-capable models. Full validator runtime/provider logs are unavailable, so
+the audit also preserves credible alternatives: Raw GitHub fetch latency or
+rate limits, model/schema variance, provider overload, validator capacity, and
+GenVM/web-module runtime faults. See the audit's `timeout_diagnosis` object and
+its official documentation links; do not cite the inference as a confirmed
+network root cause.
+
 The proof harness records finalized receipts, discovered consensus/vote fields, exact expected and persisted results, policy/source hashes, and limitations:
 
 ```powershell
