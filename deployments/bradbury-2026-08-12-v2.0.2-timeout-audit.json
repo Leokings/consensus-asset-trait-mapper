@@ -23,7 +23,7 @@
     "confidence_scope": "This is the most likely explanation supported by the available public evidence, not a confirmed root cause or an attribution to any individual validator, provider, GenVM component, or contract path.",
     "why_not_confirmed": "Full per-validator GenVM, web-module, model-provider, routing, and timing logs are not available in this audit evidence. Transaction status, votes, hashes, and public Explorer/API fields do not identify which internal step timed out.",
     "evidence_basis": [
-      "The official SDK transaction view reports execution FINISHED_WITH_RETURN and the captured execution evidence contains a bounded MAPPED candidate, but that candidate was not accepted or finalized.",
+      "The official SDK transaction view reports the leader execution FINISHED_WITH_RETURN and the captured execution evidence contains a bounded MAPPED candidate, but that candidate was not accepted or finalized.",
       "The terminal SDK vote representation contains one DETERMINISTIC_VIOLATION and four TIMEOUT votes; the Explorer represents the same positions as one NONDET_DISAGREE and four TIMEOUT votes.",
       "Post-terminal latest-final and latest-nonfinal reads both show mapping_count 0, no request record, and no asset record.",
       "The semantic input used a digest-pinned, strict PNG of 58,501 encoded bytes, below the contract's 65,536-byte PNG ceiling, after deterministic PNG structure and decoded-work validation.",
