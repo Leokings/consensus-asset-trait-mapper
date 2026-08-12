@@ -22,16 +22,16 @@ Set every variable in `.env.example`. Replace all placeholders. `ASSET_MAPPER_SO
 The repository includes a prepared immutable metadata fixture at:
 
 ```text
-https://raw.githubusercontent.com/Leokings/genlayer-ic-public-fixtures/225251710d96fa4349c3c5d98ea6b6873ee1959e/fixtures/metadata/emberguard-heavy-armor.json
+https://raw.githubusercontent.com/Leokings/genlayer-ic-public-fixtures/534a1d95bcc280277626612582275f7479efa286/fixtures/metadata/emberguard-heavy-armor-compact.json
 ```
 
-Its exact SHA-256 is `a23e88a1f7253928a073f5f16534bf70ebbd7029a1e702b17914c05432e2f27d`. GitHub Raw serves this strict JSON file as `text/plain`; V2 accepts that MIME only as a transport container after exact digest verification, then applies the same strict JSON, identity, source-prefix, and image-URL checks. The metadata binds this independently pinned image:
+Its exact SHA-256 is `55387d76d0299d95bbe74d4880d98dc9904870fa458470c87572dbceab6fac0b`. GitHub Raw serves this strict JSON file as `text/plain`; V2 accepts that MIME only as a transport container after exact digest verification, then applies the same strict JSON, identity, source-prefix, and image-URL checks. The metadata binds this independently pinned image:
 
 ```text
-https://raw.githubusercontent.com/Leokings/genlayer-ic-public-fixtures/c5a1fb7503d2af3e3ec7dfae47830940f6ab9cd5/fixtures/assets/emberguard-heavy-armor.png
+https://raw.githubusercontent.com/Leokings/genlayer-ic-public-fixtures/d22e122aac62ac138e5056be53177e8bcceddd5d/fixtures/assets/emberguard-heavy-armor-compact.png
 ```
 
-The exact image SHA-256 is `fdcf0cc4742d841a94514c629ce9f46466a6588f8880c695832fcc25bf6c2f9c` over 402,248 bytes. Both URLs are commit-pinned; compute and independently verify both response digests immediately before the run.
+The exact image SHA-256 is `c86aefbd3140da84536192d5518c59dfaf2ef56ae7595825db934e4b94768fcb` over 58,501 bytes. Both URLs are commit-pinned; compute and independently verify both response digests immediately before the run.
 
 ## StudioNet
 
@@ -55,10 +55,10 @@ $env:ASSET_MAPPER_POLICY_JSON = Get-Content -Raw examples\live-policy.json
 $env:ASSET_MAPPER_REQUEST_ID = "SMOKE-EMBERGUARD-001"
 $env:ASSET_MAPPER_COLLECTION_ID = "demo:emberguard-armor"
 $env:ASSET_MAPPER_TOKEN_REFERENCE = "emberguard-heavy-armor-1"
-$env:ASSET_MAPPER_METADATA_URL = "https://raw.githubusercontent.com/Leokings/genlayer-ic-public-fixtures/225251710d96fa4349c3c5d98ea6b6873ee1959e/fixtures/metadata/emberguard-heavy-armor.json"
-$env:ASSET_MAPPER_METADATA_SHA256 = "a23e88a1f7253928a073f5f16534bf70ebbd7029a1e702b17914c05432e2f27d"
-$env:ASSET_MAPPER_IMAGE_URL = "https://raw.githubusercontent.com/Leokings/genlayer-ic-public-fixtures/c5a1fb7503d2af3e3ec7dfae47830940f6ab9cd5/fixtures/assets/emberguard-heavy-armor.png"
-$env:ASSET_MAPPER_IMAGE_SHA256 = "fdcf0cc4742d841a94514c629ce9f46466a6588f8880c695832fcc25bf6c2f9c"
+$env:ASSET_MAPPER_METADATA_URL = "https://raw.githubusercontent.com/Leokings/genlayer-ic-public-fixtures/534a1d95bcc280277626612582275f7479efa286/fixtures/metadata/emberguard-heavy-armor-compact.json"
+$env:ASSET_MAPPER_METADATA_SHA256 = "55387d76d0299d95bbe74d4880d98dc9904870fa458470c87572dbceab6fac0b"
+$env:ASSET_MAPPER_IMAGE_URL = "https://raw.githubusercontent.com/Leokings/genlayer-ic-public-fixtures/d22e122aac62ac138e5056be53177e8bcceddd5d/fixtures/assets/emberguard-heavy-armor-compact.png"
+$env:ASSET_MAPPER_IMAGE_SHA256 = "c86aefbd3140da84536192d5518c59dfaf2ef56ae7595825db934e4b94768fcb"
 $env:ASSET_MAPPER_EXPECTED_STATUS = "MAPPED"
 $env:ASSET_MAPPER_EXPECTED_REASON = "ASSET_ADMITTED_AND_MAPPED"
 $env:ASSET_MAPPER_EXPECTED_PROFILE = "EMBERGUARD_HEAVY_ARMOR_FIRE_R3_P2"
@@ -85,7 +85,7 @@ digests. A missing or mismatched identity invalidates the checkpoint.
 The Bradbury release policy is not a configurable proof input. Its environment
 value must be byte-for-byte identical to committed `examples/live-policy.json`,
 including the final newline (SHA-256
-`bc6ad57ad407259df3c76aa13d5116822810847eb4e17847ea69e5b24e863f9f`).
+`ec72aa8b0391432a2e2f5d613e4fd767e3225693526775d5565e32e2a2bd9df0`).
 The harness verifies the exact contract, policy, and JavaScript harness Git
 objects at `ASSET_MAPPER_SOURCE_COMMIT`, requires that commit to be checked-out
 HEAD with a clean tracked working tree, and permits exactly the documented Emberguard

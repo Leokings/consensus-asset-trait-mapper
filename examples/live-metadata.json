@@ -11,7 +11,7 @@
   ],
   "collection_id": "demo:emberguard-armor",
   "description": "A standalone dark heavy plate cuirass with a bright orange fire crystal set in the chest.",
-  "image": "https://raw.githubusercontent.com/Leokings/genlayer-ic-public-fixtures/c5a1fb7503d2af3e3ec7dfae47830940f6ab9cd5/fixtures/assets/emberguard-heavy-armor.png",
+  "image": "https://raw.githubusercontent.com/Leokings/genlayer-ic-public-fixtures/d22e122aac62ac138e5056be53177e8bcceddd5d/fixtures/assets/emberguard-heavy-armor-compact.png",
   "name": "Emberguard Heavy Armor",
   "token_reference": "emberguard-heavy-armor-1"
 }

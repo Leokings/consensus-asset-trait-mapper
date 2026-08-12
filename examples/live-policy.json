@@ -7,9 +7,9 @@
     {
       "collection_id": "demo:emberguard-armor",
       "image_domain": "raw.githubusercontent.com",
-      "image_path_prefix": "/Leokings/genlayer-ic-public-fixtures/c5a1fb7503d2af3e3ec7dfae47830940f6ab9cd5/fixtures/assets/",
+      "image_path_prefix": "/Leokings/genlayer-ic-public-fixtures/d22e122aac62ac138e5056be53177e8bcceddd5d/fixtures/assets/",
       "metadata_domain": "raw.githubusercontent.com",
-      "metadata_path_prefix": "/Leokings/genlayer-ic-public-fixtures/225251710d96fa4349c3c5d98ea6b6873ee1959e/fixtures/metadata/"
+      "metadata_path_prefix": "/Leokings/genlayer-ic-public-fixtures/534a1d95bcc280277626612582275f7479efa286/fixtures/metadata/"
     }
   ],
   "max_power_tier": 2,

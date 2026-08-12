@@ -23,7 +23,7 @@
     ]
   },
   "constructor": {
-    "live_policy_sha256": "bc6ad57ad407259df3c76aa13d5116822810847eb4e17847ea69e5b24e863f9f",
+    "live_policy_sha256": "ec72aa8b0391432a2e2f5d613e4fd767e3225693526775d5565e32e2a2bd9df0",
     "live_policy_git_object_verified": false,
     "expected_policy_digest": "POLICY_DIGEST"
   },

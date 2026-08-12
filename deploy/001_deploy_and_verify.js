@@ -40,17 +40,17 @@ const MAX_SAFE_BLOCK_NUMBER = BigInt(Number.MAX_SAFE_INTEGER);
 const MAX_DEPLOYMENT_INPUT_BYTES = 50_000;
 const EXPECTED_GENVM_CHAIN_ID = 1;
 const LIVE_POLICY_SHA256 =
-  "bc6ad57ad407259df3c76aa13d5116822810847eb4e17847ea69e5b24e863f9f";
+  "ec72aa8b0391432a2e2f5d613e4fd767e3225693526775d5565e32e2a2bd9df0";
 const LIVE_ADMISSION_RULES =
   "Admit only a single clearly visible standalone dark heavy plate cuirass with a bright orange fire crystal mounted in the chest on a plain neutral background; reject characters, multiple objects, light armor, non-fire crystals, or unclear images.";
 const LIVE_COLLECTION_SOURCE = Object.freeze({
   collection_id: "demo:emberguard-armor",
   image_domain: "raw.githubusercontent.com",
   image_path_prefix:
-    "/Leokings/genlayer-ic-public-fixtures/c5a1fb7503d2af3e3ec7dfae47830940f6ab9cd5/fixtures/assets/",
+    "/Leokings/genlayer-ic-public-fixtures/d22e122aac62ac138e5056be53177e8bcceddd5d/fixtures/assets/",
   metadata_domain: "raw.githubusercontent.com",
   metadata_path_prefix:
-    "/Leokings/genlayer-ic-public-fixtures/225251710d96fa4349c3c5d98ea6b6873ee1959e/fixtures/metadata/",
+    "/Leokings/genlayer-ic-public-fixtures/534a1d95bcc280277626612582275f7479efa286/fixtures/metadata/",
 });
 const LIVE_TRAIT_PROFILE = Object.freeze({
   class_id: "HEAVY_ARMOR",

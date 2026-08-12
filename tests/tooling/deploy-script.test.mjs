@@ -49,10 +49,10 @@ const fixture = {
   collection_id: "demo:emberguard-armor",
   token_reference: "emberguard-heavy-armor-1",
   metadata_url:
-    "https://raw.githubusercontent.com/Leokings/genlayer-ic-public-fixtures/225251710d96fa4349c3c5d98ea6b6873ee1959e/fixtures/metadata/emberguard-heavy-armor.json",
+    "https://raw.githubusercontent.com/Leokings/genlayer-ic-public-fixtures/534a1d95bcc280277626612582275f7479efa286/fixtures/metadata/emberguard-heavy-armor-compact.json",
   metadata_sha256: "a".repeat(64),
   image_url:
-    "https://raw.githubusercontent.com/Leokings/genlayer-ic-public-fixtures/c5a1fb7503d2af3e3ec7dfae47830940f6ab9cd5/fixtures/assets/emberguard-heavy-armor.png",
+    "https://raw.githubusercontent.com/Leokings/genlayer-ic-public-fixtures/d22e122aac62ac138e5056be53177e8bcceddd5d/fixtures/assets/emberguard-heavy-armor-compact.png",
   image_sha256: "b".repeat(64),
 };
 const expected = {
@@ -262,7 +262,7 @@ test("canonical policy and protocol digests are deterministic and sender bound",
 test("live policy contains the exact closed fixture profile and source bindings", () => {
   assert.equal(
     createHash("sha256").update(livePolicyBytes).digest("hex"),
-    "bc6ad57ad407259df3c76aa13d5116822810847eb4e17847ea69e5b24e863f9f",
+    "ec72aa8b0391432a2e2f5d613e4fd767e3225693526775d5565e32e2a2bd9df0",
   );
   assert.doesNotThrow(() => assertPolicyFixture(livePolicy, fixture, expected));
   assert.throws(
