@@ -8,9 +8,10 @@ from genlayer import *
 from dataclasses import dataclass
 import hashlib
 import json
+import zlib
 
 
-CONTRACT_VERSION = "2.0.1"
+CONTRACT_VERSION = "2.0.2"
 POLICY_SCHEMA = "CONSENSUS_ASSET_ADMISSION_TRAIT_MAPPING_V2"
 DIGEST_DOMAIN = "GENLAYER_CONSENSUS_ASSET_ADMISSION_TRAIT_MAPPER"
 
@@ -53,8 +54,13 @@ MAX_PATH_PREFIX_CHARS = 512
 MAX_PROFILE_DESCRIPTION_CHARS = 500
 MAX_METADATA_BYTES = 16000
 MAX_METADATA_CANONICAL_CHARS = 12000
-MAX_IMAGE_BYTES = 524288
-MIN_IMAGE_BYTES = 16
+MAX_IMAGE_BYTES = 65536
+MIN_IMAGE_BYTES = 64
+MIN_IMAGE_DIMENSION = 32
+MAX_IMAGE_DIMENSION = 2048
+MAX_IMAGE_PIXELS = 1048576
+MAX_DECODED_IMAGE_BYTES = MAX_IMAGE_PIXELS * 4 + MAX_IMAGE_DIMENSION
+MAX_PNG_CHUNKS = 256
 MAX_TIER = 10
 
 _POLICY_KEYS = (
@@ -73,7 +79,7 @@ _SEMANTIC_STATUSES = (
     STATUS_UNSUPPORTED,
     STATUS_METADATA_CONFLICT,
 )
-_IMAGE_MEDIA_TYPES = ("image/jpeg", "image/png", "image/webp")
+_PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 _RESERVED_HOST_SUFFIXES = (
     ".internal",
     ".invalid",
@@ -495,6 +501,94 @@ def _content_length_valid(headers, body_length: int) -> bool:
     return int(value) == body_length
 
 
+def _u32(raw: bytes, at: int) -> int:
+    return raw[at] * 16777216 + raw[at + 1] * 65536 + raw[at + 2] * 256 + raw[at + 3]
+
+
+def _inspect_png(body: bytes) -> bool:
+    if len(body) < MIN_IMAGE_BYTES or body[:8] != _PNG_SIGNATURE:
+        return False
+    offset = 8
+    chunks = width = height = channels = phase = 0
+    has_phys = False
+    idat: list[bytes] = []
+    while offset < len(body):
+        chunks += 1
+        if chunks > MAX_PNG_CHUNKS or offset + 12 > len(body):
+            return False
+        size = _u32(body, offset)
+        start = offset + 8
+        stop = start + size
+        end = stop + 4
+        if stop < start or end > len(body):
+            return False
+        kind = body[offset + 4:offset + 8]
+        data = body[start:stop]
+        if zlib.crc32(data, zlib.crc32(kind)) & 0xFFFFFFFF != _u32(body, stop):
+            return False
+        if phase == 0:
+            if kind != b"IHDR" or size != 13:
+                return False
+            width, height = _u32(body, start), _u32(body, start + 4)
+            depth, color = body[start + 8], body[start + 9]
+            if depth != 8 or color not in (2, 6):
+                return False
+            if body[start + 10:start + 13] != b"\x00\x00\x00":
+                return False
+            channels = 3 if color == 2 else 4
+            phase = 1
+        elif kind == b"pHYs" and phase == 1 and not has_phys:
+            if size != 9 or data[8] not in (0, 1):
+                return False
+            has_phys = True
+        elif kind == b"IDAT" and phase in (1, 2):
+            if size == 0:
+                return False
+            idat.append(data)
+            phase = 2
+        elif kind == b"IEND" and phase == 2:
+            if size != 0 or end != len(body):
+                return False
+            phase = 3
+        else:
+            return False
+        offset = end
+    if phase != 3 or len(idat) == 0:
+        return False
+    if (
+        width < MIN_IMAGE_DIMENSION
+        or height < MIN_IMAGE_DIMENSION
+        or width > MAX_IMAGE_DIMENSION
+        or height > MAX_IMAGE_DIMENSION
+    ):
+        return False
+    if width * height > MAX_IMAGE_PIXELS:
+        return False
+
+    stride = 1 + width * channels
+    decoded_size = stride * height
+    if decoded_size > MAX_DECODED_IMAGE_BYTES:
+        return False
+    try:
+        decoder = zlib.decompressobj()
+        decoded = decoder.decompress(b"".join(idat), decoded_size + 1)
+        if (
+            len(decoded) != decoded_size
+            or not decoder.eof
+            or decoder.unused_data
+            or decoder.unconsumed_tail
+        ):
+            return False
+        if decoder.flush():
+            return False
+    except zlib.error:
+        return False
+    for row in range(height):
+        if decoded[row * stride] > 4:
+            return False
+    return True
+
+
 def _terminal_result(status: str) -> dict:
     reasons = {
         STATUS_INELIGIBLE: REASON_INELIGIBLE,
@@ -578,7 +672,7 @@ def _fetch_asset(
 
     image_response = gl.nondet.web.get(
         image_url,
-        headers={"Accept": "image/png,image/jpeg,image/webp", "Accept-Encoding": "identity"},
+        headers={"Accept": "image/png", "Accept-Encoding": "identity"},
     )
     image_status = int(image_response.status)
     if image_status in (408, 425, 429) or image_status >= 500:
@@ -587,19 +681,21 @@ def _fetch_asset(
     image_media = _header(image_response.headers, "content-type").split(";", 1)[0].strip().lower()
     if image_status != 200 or len(image_body) == 0:
         return None, b"", _terminal_result(STATUS_SOURCE_UNAVAILABLE)
-    signature_matches = (
-        image_media == "image/png" and image_body.startswith(b"\x89PNG\r\n\x1a\n")
-        or image_media == "image/jpeg" and image_body.startswith(b"\xff\xd8\xff")
-        or image_media == "image/webp" and image_body.startswith(b"RIFF") and len(image_body) >= 12 and image_body[8:12] == b"WEBP"
-    )
-    if len(image_body) < MIN_IMAGE_BYTES or len(image_body) > MAX_IMAGE_BYTES or not _content_length_valid(
+    if not isinstance(image_body, bytes):
+        return None, b"", _terminal_result(STATUS_INVALID_SOURCE_FORMAT)
+    if len(image_body) > MAX_IMAGE_BYTES or not _content_length_valid(
         image_response.headers, len(image_body)
     ):
         return None, b"", _terminal_result(STATUS_CONTENT_LIMIT)
-    if image_media not in _IMAGE_MEDIA_TYPES or not signature_matches:
+    if len(image_body) < MIN_IMAGE_BYTES:
+        return None, b"", _terminal_result(STATUS_INVALID_SOURCE_FORMAT)
+    image_encoding = _header(image_response.headers, "content-encoding").lower()
+    if image_encoding not in ("", "identity") or image_media != "image/png":
         return None, b"", _terminal_result(STATUS_INVALID_SOURCE_FORMAT)
     if _sha256_hex(image_body) != image_sha256:
         return None, b"", _terminal_result(STATUS_INTEGRITY_FAILURE)
+    if not _inspect_png(image_body):
+        return None, b"", _terminal_result(STATUS_INVALID_SOURCE_FORMAT)
     return metadata, image_body, None
 
 

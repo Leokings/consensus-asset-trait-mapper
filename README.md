@@ -13,7 +13,9 @@ The caller submits a collection ID, token reference, public metadata and image U
 - A closed set of complete trait profiles
 - Admission rules and deterministic tier caps
 
-The leader fetches and hashes both sources, verifies metadata identity and exact image-URL binding, inspects the image, and returns only a status plus one `profile_id`. Validators independently re-fetch the same digest-pinned bytes and audit the substantive result. Deterministic code derives class, element, rarity, and power from the selected profile; the LLM never chooses or modifies numeric tiers.
+The leader fetches and hashes both sources, verifies metadata identity and exact image-URL binding, validates a strict bounded PNG, inspects the image, and returns only a status plus one `profile_id`. Validators independently re-fetch the same digest-pinned bytes and audit the substantive result. Deterministic code derives class, element, rarity, and power from the selected profile; the LLM never chooses or modifies numeric tiers.
+
+The image envelope is deliberately narrow for consensus liveness: PNG only, at most 65,536 encoded bytes, 8-bit non-interlaced RGB/RGBA, 32-2,048 pixels per dimension, at most 1,048,576 pixels, and bounded exact zlib output. CRCs, chunk order, scanline filters, EOF, and decoded length are checked before any vision call. APNG, palettes, text/unknown chunks, decompression bombs, and malformed streams are rejected.
 
 ## Outcomes
 
@@ -84,8 +86,8 @@ npm run check:deploy
 npm run test:tooling
 ```
 
-Current suite: **70 direct tests**, **4 Python proof-harness tests**, and
-**14 JavaScript Bradbury-harness tests**. Coverage includes validator-hook audit
+Current suite: **84 direct tests**, **4 Python proof-harness tests**, and
+**18 JavaScript Bradbury-harness tests**. Coverage includes validator-hook audit
 acceptance/rejection, malformed audits, changed evidence, terminal-result
 equivalence, transient-error parity, deployable repository fixtures,
 digest-pinned `text/plain` JSON metadata, transaction-return provenance,
@@ -142,6 +144,7 @@ fails closed; recovery never falls back to a genesis scan.
 - GenVM currently does not expose the final HTTP redirect destination; exact host/path checks apply to submitted and metadata-declared URLs, not a hidden redirect target.
 - Digest equality proves byte stability, not ownership or legal rights.
 - Metadata served as `text/plain` is accepted only as a transport container: its exact bytes remain digest-pinned and must pass the same strict JSON, identity, URL-binding, and size checks.
+- The 65,536-byte PNG and decoded-work limits are consensus-liveness boundaries, not merely upload validation; larger or structurally complex images must be canonicalized off-chain and re-pinned.
 - Correlated vision-model errors remain possible; keep consequences bounded and retain an appeal path.
 - Consumers must wait for finality and pin both contract address and `policy_digest`.
 

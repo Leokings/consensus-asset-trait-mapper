@@ -15,7 +15,7 @@ npm run test:tooling
 
 ## Exact public fixture
 
-Host real metadata and a valid PNG/JPEG/WebP at immutable URLs. The policy's collection entry must bind the exact metadata and image hostnames and path prefixes. Compute SHA-256 over the exact response bytes; content encoding, formatting, or metadata changes alter the commitment.
+Host real metadata and a strict PNG at immutable URLs. The PNG must be no larger than 65,536 bytes, use `image/png` with absent or identity content encoding, be 8-bit non-interlaced RGB/RGBA, have dimensions from 32 through 2,048 and at most 1,048,576 pixels. The contract checks every CRC, exact chunk ordering, bounded zlib output, decoded length, EOF and scanline filters. It permits only IHDR, one optional 9-byte pHYs before IDAT, consecutive IDAT chunks and IEND; APNG, palettes, text/unknown chunks and decompression bombs are rejected. The policy's collection entry must bind the exact metadata and image hostnames and path prefixes. Compute SHA-256 over exact response bytes.
 
 Set every variable in `.env.example`. Replace all placeholders. `ASSET_MAPPER_SOURCE_COMMIT` must be the full 40-character commit containing the deployed source. The release smoke deliberately requires one exact `MAPPED` profile and all derived traits.
 
@@ -50,7 +50,7 @@ After StudioNet succeeds and the configured account is funded:
 $env:ASSET_MAPPER_DEPLOY_NETWORK = "testnet_bradbury"
 $env:ASSET_MAPPER_EXPECTED_GENVM_CHAIN_ID = "1"
 $env:ASSET_MAPPER_DEPLOY_OUTPUT = "deployments/bradbury-2026-08-12.json"
-$env:ASSET_MAPPER_SOURCE_COMMIT = "<FULL_COMMIT_CONTAINING_DEPLOYED_SOURCE_AND_HARNESS>"
+$env:ASSET_MAPPER_SOURCE_COMMIT = "<FULL_COMMIT_CONTAINING_DEPLOYED_SOURCE_AND_LIVE_POLICY>"
 $env:ASSET_MAPPER_POLICY_JSON = Get-Content -Raw examples\live-policy.json
 $env:ASSET_MAPPER_REQUEST_ID = "SMOKE-EMBERGUARD-001"
 $env:ASSET_MAPPER_COLLECTION_ID = "demo:emberguard-armor"
@@ -86,9 +86,10 @@ The Bradbury release policy is not a configurable proof input. Its environment
 value must be byte-for-byte identical to committed `examples/live-policy.json`,
 including the final newline (SHA-256
 `ec72aa8b0391432a2e2f5d613e4fd767e3225693526775d5565e32e2a2bd9df0`).
-The harness verifies the exact contract, policy, and JavaScript harness Git
-objects at `ASSET_MAPPER_SOURCE_COMMIT`, requires that commit to be checked-out
-HEAD with a clean tracked working tree, and permits exactly the documented Emberguard
+The harness verifies the exact contract and policy Git objects at
+`ASSET_MAPPER_SOURCE_COMMIT`, requires that commit to be an ancestor of the
+current clean tracked HEAD, and separately verifies and records the JavaScript
+proof harness at that current HEAD. It permits exactly the documented Emberguard
 policy ID/version/admission rules, one source binding, and one trait profile.
 
 The release harness checks both remote fixture byte commitments before any

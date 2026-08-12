@@ -25,7 +25,7 @@ const NETWORK = {
   name: "Genlayer Bradbury Testnet",
   rpc: "https://rpc-bradbury.genlayer.com",
 };
-const CONTRACT_VERSION = "2.0.1";
+const CONTRACT_VERSION = "2.0.2";
 const POLICY_SCHEMA = "CONSENSUS_ASSET_ADMISSION_TRAIT_MAPPING_V2";
 const DIGEST_DOMAIN = "GENLAYER_CONSENSUS_ASSET_ADMISSION_TRAIT_MAPPER";
 const RUNNER = "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6";
@@ -677,8 +677,8 @@ export async function verifyRemoteFixture(fixture) {
     fixture.image_url,
     fixture.image_sha256,
     "Image fixture",
-    ["image/jpeg", "image/png", "image/webp"],
-    524_288,
+    ["image/png"],
+    65_536,
   );
   const parsed = parseJson("metadata fixture", metadata.body.toString("utf8"));
   if (

@@ -438,7 +438,7 @@ def test_deploy_and_smoke_finalized():
 
     if record is None:
         raise AssertionError("Missing deployment checkpoint")
-    if policy["contract_version"] != "2.0.1" or policy["policy_schema"] != "CONSENSUS_ASSET_ADMISSION_TRAIT_MAPPING_V2":
+    if policy["contract_version"] != "2.0.2" or policy["policy_schema"] != "CONSENSUS_ASSET_ADMISSION_TRAIT_MAPPING_V2":
         raise AssertionError("Unexpected deployed contract version or policy schema")
     if policy["policy_digest"] != record["policy_digest"] or policy["policy_json"] != record["policy_json"]:
         raise AssertionError("On-chain immutable policy differs from checkpoint")

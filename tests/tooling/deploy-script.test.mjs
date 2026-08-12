@@ -173,6 +173,10 @@ test("contract pins a production runner and live deployment stays below input bu
     Buffer.byteLength(contract, "utf8") +
     Buffer.byteLength(JSON.stringify([policyInput]), "utf8");
   assert.ok(bytes < 50_000, `live deployment is ${bytes} bytes`);
+  assert.match(contract, /CONTRACT_VERSION = "2\.0\.2"/);
+  assert.match(contract, /MAX_IMAGE_BYTES = 65536/);
+  assert.match(deployment, /\["image\/png"\],\s*65_536/);
+  assert.doesNotMatch(deployment, /image\/(jpeg|webp)/);
 });
 
 test("Bradbury harness checkpoints intent, verifies provenance, finality, and latest-final state", () => {

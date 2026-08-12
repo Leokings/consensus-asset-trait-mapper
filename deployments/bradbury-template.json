@@ -14,13 +14,15 @@
     "commit": "FULL_40_CHARACTER_COMMIT",
     "sha256": "CONTRACT_SOURCE_SHA256",
     "runner": "PINNED_RUNNER",
-    "contract_version": "2.0.1",
+    "contract_version": "2.0.2",
     "policy_schema": "CONSENSUS_ASSET_ADMISSION_TRAIT_MAPPING_V2",
     "commit_git_objects_verified": [
       "contracts/ConsensusAssetAdmissionTraitMapper.py",
-      "examples/live-policy.json",
-      "deploy/001_deploy_and_verify.js"
-    ]
+      "examples/live-policy.json"
+    ],
+    "proof_harness_commit": "FULL_40_CHARACTER_PROOF_HARNESS_COMMIT",
+    "proof_harness_git_object_verified": "deploy/001_deploy_and_verify.js",
+    "harness_sha256": "PROOF_HARNESS_SHA256"
   },
   "constructor": {
     "live_policy_sha256": "ec72aa8b0391432a2e2f5d613e4fd767e3225693526775d5565e32e2a2bd9df0",

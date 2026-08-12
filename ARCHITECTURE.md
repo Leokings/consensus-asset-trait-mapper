@@ -10,7 +10,7 @@ Immutable V2 policy
 Caller submits sender-scoped request, token reference, exact URLs and SHA-256 digests
                               |
 Deterministic validation
-  strict JSON, source prefix, MIME/signature, byte limits, metadata identity and hashes
+  strict JSON, source prefix, hashes, and bounded canonical PNG validation
                               |
 Leader vision judgment
   status + one profile_id only
@@ -55,8 +55,8 @@ The contract keeps source problems distinct:
 
 - `SOURCE_UNAVAILABLE`: non-success response or empty body
 - `INTEGRITY_FAILURE`: SHA-256 mismatch
-- `INVALID_SOURCE_FORMAT`: malformed/duplicate/nonfinite JSON, unsupported MIME, or invalid image signature. Digest-pinned `text/plain` metadata is permitted because common immutable raw-file hosts use that MIME type, but the bytes still undergo strict JSON parsing and every identity/source check.
-- `CONTENT_LIMIT`: byte, canonical-text, or content-length limit
+- `INVALID_SOURCE_FORMAT`: malformed/duplicate/nonfinite JSON, non-PNG evidence, invalid content encoding, or PNG structure/dimension/pixel/decode failure. PNGs must be 8-bit non-interlaced RGB/RGBA with CRC-valid ordered chunks and bounded exact zlib output. Digest-pinned `text/plain` metadata is permitted because common immutable raw-file hosts use that MIME type, but the bytes still undergo strict JSON parsing and every identity/source check.
+- `CONTENT_LIMIT`: encoded bytes above 65,536, metadata/canonical-text limits, or content-length mismatch
 
 None reserves the asset identity. `UNSUPPORTED_ASSET` is reserved for valid evidence that semantically fits no configured profile.
 

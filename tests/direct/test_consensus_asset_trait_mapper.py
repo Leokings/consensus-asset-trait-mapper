@@ -1,5 +1,7 @@
 import hashlib
 import json
+import struct
+import zlib
 from pathlib import Path
 
 import pytest
@@ -10,7 +12,82 @@ from gltest.direct.sdk_loader import setup_sdk_paths
 CONTRACT_PATH = Path("contracts/ConsensusAssetAdmissionTraitMapper.py")
 METADATA_URL = "https://assets.example.com/official/demo-forge/token-1.json"
 IMAGE_URL = "https://images.example.com/official/demo-forge/token-1.png"
-IMAGE_BODY = b"\x89PNG\r\n\x1a\n" + b"bounded-demo-image-bytes-0001"
+
+
+def png_chunk(chunk_type, data):
+    return (
+        struct.pack(">I", len(data))
+        + chunk_type
+        + data
+        + struct.pack(">I", zlib.crc32(data, zlib.crc32(chunk_type)) & 0xFFFFFFFF)
+    )
+
+
+def make_png(
+    width=32,
+    height=32,
+    *,
+    color_type=6,
+    filter_byte=0,
+    ancillary_chunks=(),
+    idat_data=None,
+    ihdr_overrides=b"",
+):
+    channels = 3 if color_type == 2 else 4
+    raw = b"".join(bytes([filter_byte]) + b"\x00" * (width * channels) for _ in range(height))
+    compressed = zlib.compress(raw, 9) if idat_data is None else idat_data
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, color_type, 0, 0, 0)
+    if ihdr_overrides:
+        ihdr = ihdr_overrides
+    return (
+        b"\x89PNG\r\n\x1a\n"
+        + png_chunk(b"IHDR", ihdr)
+        + b"".join(png_chunk(kind, data) for kind, data in ancillary_chunks)
+        + png_chunk(b"IDAT", compressed)
+        + png_chunk(b"IEND", b"")
+    )
+
+
+def make_exact_65536_png():
+    width, height = 130, 167
+    row_bytes = 1 + width * 3
+    raw = bytearray(row_bytes * height)
+    position = 0
+    counter = 0
+    while position < len(raw):
+        block = hashlib.sha256(str(counter).encode()).digest()
+        counter += 1
+        take = min(len(block), len(raw) - position)
+        raw[position:position + take] = block[:take]
+        position += take
+    for row in range(height):
+        raw[row * row_bytes] = 0
+    compressed = zlib.compress(bytes(raw), 9)
+    pad_count = (65536 - 57 - len(compressed)) // 12
+    assert 57 + len(compressed) + pad_count * 12 == 65536
+    assert pad_count > 0
+    body = make_png(
+        width,
+        height,
+        color_type=2,
+        ancillary_chunks=(),
+        idat_data=compressed,
+    )
+    # Split IDAT and add additional empty-free IDAT chunks without changing
+    # the compressed byte stream; each extra chunk contributes 12 bytes.
+    idat = compressed
+    parts = [idat[index:index + 1] for index in range(pad_count)] + [idat[pad_count:]]
+    body = (
+        b"\x89PNG\r\n\x1a\n"
+        + png_chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0))
+        + b"".join(png_chunk(b"IDAT", part) for part in parts)
+        + png_chunk(b"IEND", b"")
+    )
+    assert len(body) == 65536
+    return body
+
+
+IMAGE_BODY = make_png()
 
 
 def policy_dict():
@@ -174,7 +251,7 @@ def test_constructor_canonicalizes_exact_sources_and_profiles(direct_vm, direct_
     stored = mapper.get_policy()
     policy = json.loads(stored["policy_json"])
 
-    assert stored["contract_version"] == "2.0.1"
+    assert stored["contract_version"] == "2.0.2"
     assert stored["policy_schema"] == "CONSENSUS_ASSET_ADMISSION_TRAIT_MAPPING_V2"
     assert policy["collection_sources"][0]["metadata_path_prefix"] == "/official/demo-forge/"
     assert [item["profile_id"] for item in policy["trait_profiles"]] == [
@@ -191,7 +268,7 @@ def test_repository_example_policies_deploy(direct_vm, direct_deploy, policy_pat
     mapper = deploy_mapper(direct_vm, direct_deploy, policy_json=policy_json)
 
     stored = mapper.get_policy()
-    assert stored["contract_version"] == "2.0.1"
+    assert stored["contract_version"] == "2.0.2"
     assert json.loads(stored["policy_json"])["collection_sources"]
     assert json.loads(stored["policy_json"])["trait_profiles"]
 
@@ -491,6 +568,103 @@ def test_source_format_and_content_limits_are_distinct_from_semantic_unsupported
     metadata_body, image_body = mock_sources(direct_vm, **kwargs)
     submit(mapper, metadata_body, image_body)
     assert mapper.get_mapping(1)["status"] == status
+
+
+def test_pinned_compact_png_with_single_phys_chunk_is_accepted(direct_vm, direct_deploy):
+    fixture = Path("../genlayer-ic-public-fixtures/fixtures/assets/emberguard-heavy-armor-compact.png")
+    image_body = fixture.read_bytes()
+    assert len(image_body) == 58501
+
+    mapper = deploy_mapper(direct_vm, direct_deploy)
+    metadata_body, image_body = mock_sources(direct_vm, image_body=image_body)
+    mock_mapping(direct_vm)
+    submit(mapper, metadata_body, image_body, request_id="PINNED-PHYS")
+
+    assert mapper.get_mapping(1)["status"] == "MAPPED"
+
+
+def test_png_fetch_gate_accepts_exact_65536_byte_boundary(direct_vm, direct_deploy):
+    image_body = make_exact_65536_png()
+    mapper = deploy_mapper(direct_vm, direct_deploy)
+    metadata_body, image_body = mock_sources(direct_vm, image_body=image_body)
+    mock_mapping(direct_vm)
+    submit(mapper, metadata_body, image_body, request_id="IMAGE-MAX")
+
+    assert mapper.get_mapping(1)["status"] == "MAPPED"
+
+
+def test_png_fetch_gate_rejects_65537_bytes_as_content_limit(direct_vm, direct_deploy):
+    image_body = make_exact_65536_png() + b"x"
+    mapper = deploy_mapper(direct_vm, direct_deploy)
+    metadata_body, image_body = mock_sources(direct_vm, image_body=image_body)
+    submit(mapper, metadata_body, image_body, request_id="IMAGE-OVER-MAX")
+
+    assert mapper.get_mapping(1)["status"] == "CONTENT_LIMIT"
+
+
+@pytest.mark.parametrize(
+    "image_body",
+    [
+        make_png(2049, 32),
+        make_png(2048, 513),
+        make_png(ancillary_chunks=((b"acTL", struct.pack(">II", 1, 0)),)),
+        make_png(ancillary_chunks=((b"tEXt", b"Comment\x00metadata"),)),
+        make_png(ancillary_chunks=((b"ABCD", b"unknown-critical"),)),
+        make_png(idat_data=zlib.compress(b"\x00" * 10)),
+        make_png(idat_data=zlib.compress(b"\x00" * 1000000)),
+        make_png(filter_byte=5),
+    ],
+    ids=[
+        "dimension-over-limit",
+        "pixel-budget-over-limit",
+        "animated-png",
+        "textual-metadata",
+        "unknown-critical-chunk",
+        "truncated-decoded-stream",
+        "decompression-bomb",
+        "invalid-scanline-filter",
+    ],
+)
+def test_strict_png_profile_rejects_unsafe_or_malformed_images(
+    direct_vm, direct_deploy, image_body
+):
+    mapper = deploy_mapper(direct_vm, direct_deploy)
+    metadata_body, image_body = mock_sources(direct_vm, image_body=image_body)
+    submit(mapper, metadata_body, image_body)
+
+    assert mapper.get_mapping(1)["status"] == "INVALID_SOURCE_FORMAT"
+
+
+def test_png_with_corrupt_crc_is_rejected(direct_vm, direct_deploy):
+    image_body = bytearray(make_png())
+    image_body[-1] ^= 1
+    corrupted = bytes(image_body)
+    mapper = deploy_mapper(direct_vm, direct_deploy)
+    metadata_body, corrupted = mock_sources(direct_vm, image_body=corrupted)
+    submit(mapper, metadata_body, corrupted, request_id="BAD-CRC")
+
+    assert mapper.get_mapping(1)["status"] == "INVALID_SOURCE_FORMAT"
+
+
+@pytest.mark.parametrize(
+    ("image_type", "image_body"),
+    [
+        (b"image/jpeg", b"\xff\xd8\xff" + b"x" * 100),
+        (b"image/webp", b"RIFF" + b"x" * 4 + b"WEBP" + b"x" * 100),
+    ],
+)
+def test_semantic_image_evidence_is_png_only(
+    direct_vm, direct_deploy, image_type, image_body
+):
+    mapper = deploy_mapper(direct_vm, direct_deploy)
+    metadata_body, image_body = mock_sources(
+        direct_vm,
+        image_type=image_type,
+        image_body=image_body,
+    )
+    submit(mapper, metadata_body, image_body)
+
+    assert mapper.get_mapping(1)["status"] == "INVALID_SOURCE_FORMAT"
 
 
 def test_digest_pinned_text_plain_metadata_is_parsed_as_strict_json(direct_vm, direct_deploy):

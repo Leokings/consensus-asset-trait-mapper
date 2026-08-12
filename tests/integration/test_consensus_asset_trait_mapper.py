@@ -74,7 +74,7 @@ def test_exact_live_asset_mapping_consensus_finalized():
     assert len(record["result_digest"]) == 64
     assert contract.get_mapping_count().call() == 1
     policy = contract.get_policy().call()
-    assert policy["contract_version"] == "2.0.1"
+    assert policy["contract_version"] == "2.0.2"
     assert policy["policy_schema"] == "CONSENSUS_ASSET_ADMISSION_TRAIT_MAPPING_V2"
     assert json.loads(policy["policy_json"])["trait_profiles"]
     print(json.dumps({"mapping_id": 1, **expected}, sort_keys=True))

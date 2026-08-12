@@ -16,7 +16,8 @@
 - Rejection of credentials, ports, queries, fragments, percent escapes, backslashes, numeric/private-looking and reserved hostnames
 - Exact metadata and image SHA-256 commitments
 - Exact metadata collection, token-reference, and image-URL binding
-- MIME, signature, byte, content-length, and canonical-metadata limits
+- PNG-only MIME/signature enforcement and a 65,536-byte encoded limit
+- CRC-checked PNG order, RGB/RGBA 8-bit non-interlaced profile, 32-2,048 dimensions, 1,048,576-pixel cap, bounded zlib output, and scanline-filter validation
 - Digest-pinned `text/plain` metadata support for immutable raw-file hosts, with unchanged strict JSON and binding validation
 - Closed statuses, reasons, profiles, and deterministic trait expansion
 - Global and per-class deterministic tier caps
@@ -60,8 +61,9 @@ GenVM ID is used to reproduce contract digests. Both are required checkpoint
 identity, so an older or mismatched record cannot be silently reused.
 
 The release policy is byte-pinned to committed `examples/live-policy.json` and
-is exactly one source plus one profile. The checked-out contract, live policy,
-and proof harness must equal their Git objects at the declared source commit.
+is exactly one source plus one profile. The contract and live policy must equal
+their Git objects at the declared source commit; the proof harness is verified
+separately against the current clean checked-out HEAD and both commits are recorded.
 
 Finalization lifecycle state alone is not proof of which EVM call finalized a
 transaction. The harness accepts a recovered external finalizer only when one
