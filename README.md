@@ -76,9 +76,17 @@ genvm-lint check contracts\ConsensusAssetAdmissionTraitMapper.py --json
 genvm-lint typecheck contracts\ConsensusAssetAdmissionTraitMapper.py --json
 genvm-lint schema contracts\ConsensusAssetAdmissionTraitMapper.py --json
 pytest tests\direct -q
+npm install
+npm run check:deploy
+npm run test:tooling
 ```
 
-Current suite: **57 direct tests**, including validator-hook tests for audit acceptance/rejection, malformed audits, changed evidence, terminal-result equivalence, transient-error parity, deployable repository fixtures, and digest-pinned `text/plain` JSON metadata.
+Current suite: **57 direct tests**, **4 Python proof-harness tests**, and
+**12 JavaScript Bradbury-harness tests**. Coverage includes validator-hook audit
+acceptance/rejection, malformed audits, changed evidence, terminal-result
+equivalence, transient-error parity, deployable repository fixtures,
+digest-pinned `text/plain` JSON metadata, transaction-return provenance,
+durable submission intent, and EVM finalization proof.
 
 ## StudioNet and Bradbury
 
@@ -102,6 +110,23 @@ gltest deploy\001_deploy_and_smoke.py -v -s --network studionet
 
 It refuses missing/placeholder evidence, a network-label mismatch, an unpinned runner, a non-full source commit, or a source-plus-policy deployment input above 50,000 bytes.
 It checkpoints the finalized deployment before submitting the semantic smoke and refuses to overwrite an existing record. Only an already-`COMPLETE` proof may be re-verified with `ASSET_MAPPER_RESUME=1`; interrupted runs fail closed and must use a fresh output file and deployment. The record cannot become `COMPLETE` unless both finalized receipts prove successful execution and expose nonempty validator and vote evidence.
+
+For Bradbury release evidence, use
+`deploy/001_deploy_and_verify.js`. It durably checkpoints submission intent and
+every captured hash before waiting, verifies decoded source/constructor/call
+provenance and sender, proves the mapping ID from the transaction return, scopes
+the 60,000,000 EVM-gas ceiling to deployment estimation only, verifies each
+Bradbury finalization transaction and EVM receipt, then re-reads the exact
+`MAPPED` record through `latest-final`. See
+[docs/ONCHAIN_TESTING.md](docs/ONCHAIN_TESTING.md).
+
+That release proof fixes the outer Bradbury EVM chain ID (`4221`) separately
+from the GenVM chain ID (`1`) used by contract digests. It also pins the exact
+committed bytes of `examples/live-policy.json`: one Emberguard source and one
+immutable profile only. Resumed `ACCEPTED`, `READY_TO_FINALIZE`, and `FINALIZED`
+transactions are revalidated, and a successful external finalizer may be
+recovered only from one exact `TransactionFinalized` log whose EVM transaction,
+calldata, receipt, and event are all verified.
 
 ## Limitations
 

@@ -1,34 +1,61 @@
 {
-  "schema_version": 2,
+  "schema_version": "4.0",
   "record_status": "NOT_RUN",
   "project": "consensus-asset-trait-mapper",
-  "network": "testnet_bradbury",
-  "chain_id": 0,
+  "repository": "https://github.com/Leokings/consensus-asset-trait-mapper",
   "recorded_at": "YYYY-MM-DDTHH:MM:SSZ",
+  "network": {
+    "evm_chain_id": 4221,
+    "genvm_chain_id": 1,
+    "name": "Genlayer Bradbury Testnet",
+    "rpc": "https://rpc-bradbury.genlayer.com"
+  },
+  "source": {
+    "commit": "FULL_40_CHARACTER_COMMIT",
+    "sha256": "CONTRACT_SOURCE_SHA256",
+    "runner": "PINNED_RUNNER",
+    "contract_version": "2.0.0",
+    "policy_schema": "CONSENSUS_ASSET_ADMISSION_TRAIT_MAPPING_V2",
+    "commit_git_objects_verified": [
+      "contracts/ConsensusAssetAdmissionTraitMapper.py",
+      "examples/live-policy.json",
+      "deploy/001_deploy_and_verify.js"
+    ]
+  },
+  "constructor": {
+    "live_policy_sha256": "bc6ad57ad407259df3c76aa13d5116822810847eb4e17847ea69e5b24e863f9f",
+    "live_policy_git_object_verified": false,
+    "expected_policy_digest": "POLICY_DIGEST"
+  },
   "contract_address": "CONTRACT_ADDRESS",
-  "contract_version": "2.0.0",
-  "policy_schema": "CONSENSUS_ASSET_ADMISSION_TRAIT_MAPPING_V2",
-  "policy_digest": "POLICY_DIGEST",
-  "policy_json": "CANONICAL_POLICY_JSON",
-  "policy": {},
-  "policy_input_sha256": "POLICY_INPUT_SHA256",
-  "source_commit": "FULL_40_CHARACTER_COMMIT",
-  "source_sha256": "CONTRACT_SOURCE_SHA256",
-  "runner_dependency": "PINNED_RUNNER_HEADER",
-  "deployment_input_bytes": 0,
-  "deployment_receipt": {},
-  "deployment_transaction_identifiers": [],
-  "deployment_consensus_evidence": {},
-  "fixture": {},
-  "expected_result": {},
-  "mapping_id": 0,
-  "mapping_receipt": {},
-  "mapping_transaction_identifiers": [],
-  "mapping_consensus_evidence": {},
-  "persisted_result": {},
-  "limitations": [
-    "Collection authenticity is bounded to immutable exact source host/path bindings; it is not ownership proof.",
-    "GenVM does not expose the final destination of HTTP redirects.",
-    "Vision consensus remains subject to correlated model error and appeal/finality behavior."
-  ]
+  "deployment": {
+    "transaction": "GENLAYER_DEPLOYMENT_TX",
+    "finalization_broadcast_transaction": "EVM_BROADCAST_TX",
+    "finalization_evm_transaction": "SUCCESSFUL_EVM_FINALIZER_TX",
+    "finalized_consensus": {}
+  },
+  "semantic_smoke": {
+    "transaction": "GENLAYER_MAPPING_TX",
+    "mapping_id": 0,
+    "finalization_broadcast_transaction": "EVM_BROADCAST_TX",
+    "finalization_evm_transaction": "SUCCESSFUL_EVM_FINALIZER_TX",
+    "finalized_consensus": {},
+    "finalized_record": {}
+  },
+  "digests": {
+    "evm_chain_id": 4221,
+    "genvm_chain_id": 1,
+    "source_sha256": "CONTRACT_SOURCE_SHA256",
+    "policy_digest": "POLICY_DIGEST",
+    "asset_digest": "ASSET_DIGEST",
+    "request_digest": "REQUEST_DIGEST",
+    "result_digest": "RESULT_DIGEST"
+  },
+  "limitations": {
+    "collection_authenticity_boundary": "Exact immutable source host/path bindings; not token ownership or legal-rights proof.",
+    "redirect_destination_observable": false,
+    "public_evidence_only": true,
+    "vision_consensus_correlated_error_possible": true,
+    "mapping_scope": "ONE_CLOSED_POLICY_PROFILE_ONLY"
+  }
 }

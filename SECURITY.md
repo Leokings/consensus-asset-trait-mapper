@@ -52,6 +52,23 @@ Request IDs are sender scoped, so another address cannot consume them. Successfu
 
 All submitted URLs, digests, metadata and decisions are public. Never submit secrets, private media, credentials, personal data, or unpublished assets.
 
+### Release-proof identity and finalization
+
+The Bradbury release harness treats the outer EVM chain ID (`4221`) and the
+GenVM-visible chain ID (`1`) as separate consensus-critical values. Only the
+GenVM ID is used to reproduce contract digests. Both are required checkpoint
+identity, so an older or mismatched record cannot be silently reused.
+
+The release policy is byte-pinned to committed `examples/live-policy.json` and
+is exactly one source plus one profile. The checked-out contract, live policy,
+and proof harness must equal their Git objects at the declared source commit.
+
+Finalization lifecycle state alone is not proof of which EVM call finalized a
+transaction. The harness accepts a recovered external finalizer only when one
+exact `TransactionFinalized(bytes32)` log identifies a successful EVM
+transaction whose target and calldata are the expected consensus-contract
+call. Duplicate, malformed, missing, or reverted evidence is rejected.
+
 ## Consumer checklist
 
 - Wait for `FINALIZED` and verify execution succeeded.

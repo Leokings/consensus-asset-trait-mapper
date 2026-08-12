@@ -2,9 +2,9 @@ __pycache__/
 .pytest_cache/
 .gltest_cache/
 artifacts/
+node_modules/
 *.log
 .env
 .env.*
 !.env.example
 deployments/*.local.json
-

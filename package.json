@@ -1,0 +1,19 @@
+{
+  "name": "consensus-asset-trait-mapper",
+  "version": "2.0.0",
+  "description": "Reusable GenLayer Intelligent Contract for bounded visual asset admission and immutable trait-profile mapping.",
+  "type": "module",
+  "license": "MIT",
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "genlayer-js": "1.1.8",
+    "viem": "2.55.11"
+  },
+  "scripts": {
+    "check:deploy": "node --check deploy/001_deploy_and_verify.js",
+    "test:tooling": "node --test tests/tooling/deploy-script.test.mjs"
+  }
+}
